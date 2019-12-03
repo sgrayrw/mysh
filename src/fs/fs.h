@@ -33,29 +33,6 @@
 #define MAX_NAME_LEN _
 
 typedef struct {
-    int block_size;	// 512
-    int inode_offset;
-    int data_offset;
-    int free_inode;
-    int free_block;
-} superblock;
-
-typedef struct {
-    int next_inode; /* index of next free inode */
-    int permission; /* permission field */
-    int size; /* numer of bytes in file */
-    int uid; /* owner’s user ID */
-    int ctime; /* change time */
-    int mtime; /* modification time */
-    int atime; /* access time */
-    int dblocks[N_DBLOCKS]; /* pointers to data blocks */
-    int iblock; /* pointer to single indirect block */
-    int i2block; /* pointer to double indirect block */
-    int i3block; /* pointer to triple indirect block */
-    int i4block; /* pointer to quadruple indirect block */
-} inode_t;
-
-typedef struct {
     int inode;
     long position; // file position indicator
 } file_t;

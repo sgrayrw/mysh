@@ -23,16 +23,16 @@
 #define N_DBLOCKS 10
 
 typedef struct {
-	int block_size;	// 512
-  	int inode_offset;
-  	int data_offset;
-  	int free_inode;
-  	int free_block;
-} Superblock;
+    int block_size;	// 512
+    int inode_offset;
+    int data_offset;
+    int free_inode;
+    int free_block;
+} superblock;
 
 typedef struct {
     int next_inode; /* index of next free inode */
-    int permission; /* pen field */
+    int permission; /* permission field */
     int size; /* numer of bytes in file */
     int uid; /* owner’s user ID */
     int ctime; /* change time */
@@ -42,8 +42,7 @@ typedef struct {
     int iblock; /* pointer to single indirect block */
     int i2block; /* pointer to double indirect block */
     int i3block; /* pointer to triple indirect block */
-  	int i4block; /* pointer to quadruple indirect block */
-  	/* allows file size up to 138 GB */
-} Inode;
+    int i4block; /* pointer to quadruple indirect block */
+} inode_t;
 
 #endif
