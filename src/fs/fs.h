@@ -9,9 +9,9 @@
  * Opened files and directories are registered in an open file table (details below).
  *
  * Brief procedures for a call to f_open(/usr/include/fs.h, mode):
- * 	1. start from the inode for "/" or current working directory
- *	2. locate its data block, search for the directory for "/usr/" and its inode
- * 	3. repeat until we find the inode for "fs.h"
+ *  1. start from the inode for "/" or current working directory
+ *  2. locate its data block, search for the directory for "/usr/" and its inode
+ *  3. repeat until we find the inode for "fs.h"
  *  4. create an instance of file_t (see struct def below) and add it to the open file table
  *  5. return an fd associated with the file_t instance to the user process
  *
