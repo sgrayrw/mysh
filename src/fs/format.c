@@ -68,8 +68,10 @@ void format() {
     for (int i = 0; i < N_INODES; ++i) {
         inode_t inode;
         inode.next_inode = (i == N_INODES - 1) ? (-1) : (sb.inode_start + (i + 1) * (long long) sizeof(inode_t));
-        inode.permission = inode.size = inode.uid = \
-            inode.ctime = inode.mtime = inode.atime = 0;
+        inode.permission = 0;
+        inode.size = 0;
+        inode.uid = 0;
+        inode.ctime = inode.mtime = inode.atime = 0;
         for (int j = 0; j < N_DBLOCKS; ++j) {
             inode.dblocks[j] = 0;
         }
