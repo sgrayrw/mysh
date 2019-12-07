@@ -10,7 +10,7 @@ void format();
 long long disksize = DFT_DISKSIZE;
 FILE* out;
 
-int main(int argc, char** argv){
+int main(int argc, char** argv) {
     if (argc != 2 && argc != 4) {
         usage();
     }

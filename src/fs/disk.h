@@ -18,18 +18,18 @@ typedef struct {
 } sb_t;
 
 typedef struct {
-    long long next_inode; /* index of next free inode */
-    int permission; /* permission field */
-    int size; /* numer of bytes in file */
+    long long next_inode; /* position of next free inode */
+    int permission;
+    long long size; /* number of bytes in file */
     int uid; /* owner’s user ID */
     int ctime; /* change time */
     int mtime; /* modification time */
     int atime; /* access time */
-    long long dblocks[N_DBLOCKS]; /* pointers to data blocks */
-    long long iblock; /* pointer to single indirect block */
-    long long i2block; /* pointer to double indirect block */
-    long long i3block; /* pointer to triple indirect block */
-    long long i4block; /* pointer to quadruple indirect block */
+    long long dblocks[N_DBLOCKS];
+    long long iblock;
+    long long i2block;
+    long long i3block;
+    long long i4block;
 } inode_t;
 
 #endif
