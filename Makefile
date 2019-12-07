@@ -1,11 +1,13 @@
-TARGET = mysh
+TARGET = mysh format
 MYSH = mysh.o sighand.o job.o builtin.o
 
 all: $(TARGET)
 
+format: src/fs/format.c src/fs/disk.h
+	gcc -o $@ src/fs/format.c
+
 mysh: $(MYSH)
 	gcc -o $@ $(MYSH)
-	rm -f $(MYSH)
 mysh.o: src/shell/mysh.c sighand.o job.o builtin.o
 	gcc -c -o $@ src/shell/mysh.c
 sighand.o: src/shell/sighand.c src/shell/sighand.h
@@ -14,5 +16,6 @@ job.o: src/shell/job.c src/shell/job.h
 	gcc -c -o $@ src/shell/job.c
 builtin.o: src/shell/builtin.c src/shell/builtin.h
 	gcc -c -o $@ src/shell/builtin.c
+
 clean:
-	rm -f $(TARGET) *.a *.o *~ vgcore*
+	rm -f $(TARGET) $(MYSH) *.a *.o *~ vgcore*

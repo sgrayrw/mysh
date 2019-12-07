@@ -3,32 +3,6 @@
 
 #include <sys/types.h>
 
-/*
- * Structure for our file system:
- * Underlying physical structure: inodes. We are not using a full VFS. We store the hierarchical structure in inodes (as a "parent" field).
- * Opened files and directories are registered in an open file table (details below).
- *
- * Brief procedures for a call to f_open(/usr/include/fs.h, mode):
- *  1. start from the inode for "/" or current working directory
- *  2. locate its data block, search for the directory for "/usr/" and its inode
- *  3. repeat until we find the inode for "fs.h"
- *  4. create an instance of file_t (see struct def below) and add it to the open file table
- *  5. return an fd associated with the file_t instance to the user process
- *
- * File table:
- * Implemented as a linked list.
- * An entry in the file table consists of a file descriptor (int) and a file struct (file_t).
- * A file_t contains an inode number and a file position indicator.
- *
- * Free-space management: a list of free blocks and a list of free inodes
- *
- * Directory file structures:
- * A directory file is an array of directory entries. A directory entry consists of the inode number and the name of the file.
- *
- */
-
-#define BOOT_SIZE 512
-#define SUPER_SIZE 512
 #define N_DBLOCKS 10
 #define MAX_NAME_LEN _
 
