@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "fs.h"
 
 int f_open(const char* pathname, const char* mode)  {
@@ -50,7 +51,10 @@ int f_rmdir(const char* pathname) {
 
 int f_mount(const char* source, const char* target) {
     // search for disk file `source` OUTSIDE the shell
-
+    FILE* disk = fopen(source, "r");
+    if (!disk) {
+        return -1;
+    }
 
 }
 
