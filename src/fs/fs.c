@@ -4,7 +4,7 @@
 #include "fs.h"
 #include "disk.h"
 
-
+vnode_t* vnodes; // root of vnode tree
 
 int f_open(const char* pathname, const char* mode) {
     char* name;
@@ -60,8 +60,17 @@ int f_mount(const char* source, const char* target) {
     // search for disk file `source` OUTSIDE the shell
     FILE* disk = fopen(source, "r");
     if (!disk) {
+        printf("mount: disk %s does not exist\n", source);
         return -1;
     }
+
+    char** tokens;
+    int len = split_path(target, &tokens);
+    vnode_t* cur = vnodes;
+    for (int i = 0; i < len; ++i) {
+        cur = find_vnode(cur, )
+    }
+
 
 }
 

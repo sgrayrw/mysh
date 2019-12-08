@@ -1,7 +1,10 @@
-TARGET = mysh format
+TARGET = mysh format test
 MYSH = mysh.o sighand.o job.o builtin.o
 
 all: $(TARGET)
+
+test: src/fs/test.c src/fs/fs.h
+	gcc -o $@ src/fs/test.c
 
 format: src/fs/format.c src/fs/disk.h
 	gcc -o $@ src/fs/format.c
