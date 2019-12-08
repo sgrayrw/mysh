@@ -76,10 +76,10 @@ int f_mount(const char* source, const char* target) {
     }
 
     char** tokens;
-    int len = split_path(target, &tokens);
+    int length = split_path(target, &tokens);
     vnode_t* cur = vnodes;
-    for (int i = 0; i < len; ++i) {
-        cur = find_vnode(cur, )
+    for (int i = 0; i < length - 1; ++i) {
+        cur = find_vnode(cur, tokens[i]);
     }
 
 
@@ -93,18 +93,36 @@ int split_path(const char* pathname, char*** result) {
     char* name;
     char* delim = "/";
     int count = 0;
-    if ((name = strtok(pathname, delim)) == NULL){
+    char buf[strlen(pathname + 1)];
+    strcpy(buf, pathname);
+    if ((name = strtok(buf, delim)) == NULL){
         return count;
     }
     *result = malloc(sizeof(char*));
-    **result = malloc(strlen(name));
+    **result = malloc(strlen(name) + 1);
     strcpy(**result, name);
     count += 1;
     while((name = strtok(NULL, delim)) != NULL){
         count += 1;
         *result = realloc(*result,sizeof(char*)*count);
-        *((*result)+count-1) = malloc(strlen(name));
-        strcpy(*((*result)+count-1), name);
+        *((*result) + count - 1) = malloc(strlen(name) + 1);
+        strcpy(*((*result) + count - 1), name);
     }
     return count;
+}
+
+vnode_t* find_vnode(vnode_t* parent, char* filename) {
+    // find from existing vnodes
+    vnode_t* cur = (vnode_t*) parent->children;
+    if (cur) {
+        do {
+            if (strcmp(cur->name, filename) == 0)
+                return cur;
+            cur = (vnode_t*) cur->next;
+        } while (cur != (vnode_t*) parent->children);
+    }
+
+    // load from disk
+    
+
 }

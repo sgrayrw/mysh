@@ -18,7 +18,7 @@ typedef struct {
 } vnode_t;
 
 typedef struct {
-    long long inode;
+    vnode_t vnode;
     long long position; // file position indicator
 } file_t;
 
@@ -46,5 +46,6 @@ int f_mount(const char* source, const char* target);
 int f_umount(const char* target);
 
 int split_path(const char*, char***);
+vnode_t* find_vnode(vnode_t* parent, char* filename);
 
 #endif

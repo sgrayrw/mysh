@@ -3,8 +3,8 @@ MYSH = mysh.o sighand.o job.o builtin.o
 
 all: $(TARGET)
 
-test: src/fs/test.c src/fs/fs.h
-	gcc -o $@ src/fs/test.c
+test: src/fs/test.c src/fs/fs.h src/fs/fs.c
+	gcc -o $@ src/fs/test.c src/fs/fs.h src/fs/fs.c
 
 format: src/fs/format.c src/fs/disk.h
 	gcc -o $@ src/fs/format.c
