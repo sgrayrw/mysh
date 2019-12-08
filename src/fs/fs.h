@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include "disk.h"
 
+#define SUCCESS 0
+#define FAILURE -1
 #define MAX_NAME_LEN (BLOCKSIZE / 2 - sizeof(long long) - 1)
 
 typedef struct {
@@ -24,6 +26,9 @@ typedef struct {
     long long inode;
     char name[MAX_NAME_LEN + 1];
 } dirent_t;
+
+vnode_t* vnodes; // root of vnode tree
+sb_t superblock;
 
 int f_open(const char* pathname, const char* mode);
 ssize_t f_read(int fd, void *buf, size_t count);

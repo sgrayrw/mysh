@@ -4,12 +4,23 @@
 #include "fs.h"
 #include "disk.h"
 
-vnode_t* vnodes; // root of vnode tree
 
 int f_open(const char* pathname, const char* mode) {
-    char* name;
-    char* next;
-    name = strtok(pathname, )
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* current = vnodes;
+    for (int i = 0; i < length-1; i++){
+        char* name = *(path+i);
+        if ((current = find_vnode(current, name)) == NULL){
+            return FAILURE;
+        }
+    }
+    char* name = *(path+length-1);
+    if ((current = find_vnode(current, name)) == NULL){
+
+        return FAILURE;
+    }
+    return SUCCESS;
 }
 
 ssize_t f_read(int fd, void *buf, size_t count) {
