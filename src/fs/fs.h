@@ -8,6 +8,14 @@
 
 typedef struct {
     long long inode;
+    int disk;
+    struct vnode_t* parent;
+    struct vnode_t* children;
+    struct vnode_t* next;
+} vnode_t;
+
+typedef struct {
+    long long inode;
     long long position; // file position indicator
 } file_t;
 
