@@ -47,11 +47,11 @@ int f_remove(int fd) {
 
 }
 
-file_t* f_opendir(const char* pathname) {
+int f_opendir(const char* pathname) {
 
 }
 
-dirent_t f_readdir(int fd) {
+int f_readdir(int fd, dirent_t* dirent) {
 
 }
 
@@ -72,7 +72,7 @@ int f_mount(const char* source, const char* target) {
     FILE* disk = fopen(source, "r");
     if (!disk) {
         printf("mount: disk %s does not exist\n", source);
-        return -1;
+        return FAILURE;
     }
 
     char** tokens;
@@ -89,7 +89,7 @@ int f_umount(const char* target) {
 
 }
 
-int split_path(const char* pathname, char*** result) {
+int split_path(const char* pathname, char*** tokens) {
     char* name;
     char* delim = "/";
     int count = 0;
@@ -98,41 +98,65 @@ int split_path(const char* pathname, char*** result) {
     if ((name = strtok(buf, delim)) == NULL){
         return count;
     }
-    *result = malloc(sizeof(char*));
-    **result = malloc(strlen(name) + 1);
-    strcpy(**result, name);
+    *tokens = malloc(sizeof(char*));
+    **tokens = malloc(strlen(name) + 1);
+    strcpy(**tokens, name);
     count += 1;
     while((name = strtok(NULL, delim)) != NULL){
         count += 1;
-        *result = realloc(*result,sizeof(char*)*count);
-        *((*result) + count - 1) = malloc(strlen(name) + 1);
-        strcpy(*((*result) + count - 1), name);
+        *tokens = realloc(*tokens,sizeof(char*)*count);
+        *((*tokens) + count - 1) = malloc(strlen(name) + 1);
+        strcpy(*((*tokens) + count - 1), name);
     }
     return count;
 }
 
-vnode_t* get_vnode(vnode_t* parent, char* filename) {
+vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
     // find from existing vnodes
-    vnode_t* cur = (vnode_t*) parent->children;
+    vnode_t* cur = parentdir->children;
     if (cur) {
         do {
             if (strcmp(cur->name, filename) == 0)
                 return cur;
-            cur = (vnode_t*) cur->next;
-        } while (cur != (vnode_t*) parent->children);
+            cur = cur->next;
+        } while (cur != parentdir->children);
     }
 
     // load from disk
-    FILE* disk = disks[parent->disk];
-    inode_t dir;
-    fseek(disk, parent->inode, SEEK_SET);
-    fread(&dir, sizeof(inode_t), 1, disk);
+    dirent_t dirent;
+    int n = 0;
+    while (readdir(parentdir, n, &dirent) != FAILURE) {
+        if (strcmp(dirent.name, filename) != 0) {
+            continue;
+        }
 
+        // found match in disk, create new vnode
+        vnode_t* newchild = malloc(sizeof(vnode_t));
+        newchild->inode = dirent.inode;
+        newchild->disk = parentdir->disk;
+        strcpy(newchild->name, dirent.name);
+        newchild->parent = parentdir;
+        newchild->children = NULL;
+        newchild->cur_entry = 0;
 
+        // add to children list of parentdir
+        if (!parentdir->children) {
+            parentdir->children = newchild;
+            newchild->next = newchild;
+            newchild->prev = newchild;
+        } else {
+            newchild->next = parentdir->children->next;
+            newchild->next->prev = newchild;
+            newchild->prev = parentdir->children;
+            newchild->prev->next = newchild;
+        }
+
+        return newchild;
+    }
 
     return NULL;
 }
 
-dirent_t* readdir(vnode_t* dir, int n) {
-    return NULL;
+int readdir(vnode_t* dir, int n, dirent_t* dirent) {
+    return FAILURE;
 }

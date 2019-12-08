@@ -8,8 +8,9 @@
 #define BLOCKSIZE 512
 #define N_INODES 128 /* max 128 inodes */
 #define N_DBLOCKS 10
+#define MAX_NAME_LEN (BLOCKSIZE / 2 - sizeof(long long) - 1)
 
-typedef struct {
+typedef struct sb_t {
     int block_size;	// 512
     long long inode_start; // 1024
     long long data_start;
@@ -17,7 +18,7 @@ typedef struct {
     long long free_block;
 } sb_t;
 
-typedef struct {
+typedef struct inode_t {
     long long next_inode; /* position of next free inode */
     int permission;
     long long size; /* number of bytes in file */
@@ -31,5 +32,10 @@ typedef struct {
     long long i3block;
     long long i4block;
 } inode_t;
+
+typedef struct dirent_t {
+    long long inode;
+    char name[MAX_NAME_LEN + 1];
+} dirent_t;
 
 #endif
