@@ -3,7 +3,7 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="eeb62712-6535-4645-bf98-13834d5ee3c8" name="bmc" url="http://powerpuff.cs.brynmawr.edu">
-        <fileTransfer host="powerpuff.cs.brynmawr.edu" port="22" accessType="SFTP">
+        <fileTransfer host="powerpuff.cs.brynmawr.edu" port="22" rootFolder="/home/rshi1/cs355/Final-Project" accessType="SFTP">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
           </advancedOptions>
