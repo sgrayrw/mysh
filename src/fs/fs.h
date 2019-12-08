@@ -9,7 +9,7 @@
 typedef struct {
     long long inode;
     int disk;
-    char name[MAX_NAME_LEN + 1]gac;
+    char name[MAX_NAME_LEN + 1];
     struct vnode_t* parent;
     struct vnode_t* children;
     struct vnode_t* next;
