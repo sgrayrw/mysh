@@ -59,39 +59,35 @@ void format() {
     }
 
     // superblock
-    sb_t sb;
-    sb.block_size = BLOCKSIZE;
-    sb.inode_start = sb.free_inode = BOOTSIZE + SUPERSIZE;
+    sb_t* sb = calloc(1, sizeof(sb_t));
+    sb->block_size = BLOCKSIZE;
+    sb->inode_start = sb->free_inode = BOOTSIZE + SUPERSIZE;
 
     // inodes
-    fseek(out, sb.inode_start, SEEK_SET);
+    fseek(out, sb->inode_start, SEEK_SET);
+    inode_t* inode = calloc(1, sizeof(inode_t));
     for (int i = 0; i < N_INODES; ++i) {
-        inode_t inode;
-        inode.next_inode = (i == N_INODES - 1) ? (-1) : (sb.inode_start + (i + 1) * (long long) sizeof(inode_t));
-        inode.permission = 0;
-        inode.size = 0;
-        inode.uid = 0;
-        inode.ctime = inode.mtime = inode.atime = 0;
-        for (int j = 0; j < N_DBLOCKS; ++j) {
-            inode.dblocks[j] = 0;
-        }
-        inode.iblock = inode.i2block = inode.i3block = inode.i4block = 0;
-        fwrite(&inode, sizeof(inode_t), 1, out);
+        inode->next_inode = (i == N_INODES - 1) ? (-1) : (sb->inode_start + (i + 1) * (long long) sizeof(inode_t));
+        fwrite(inode, sizeof(inode_t), 1, out);
     }
 
     // then write superblock to disk
-    long long data_start = ((ftell(out) - 1) / BLOCKSIZE + 1) * BLOCKSIZE; // round up to multiples of BLOCKSIZE
-    sb.data_start = sb.free_block = data_start;
+    long long inode_end = ftell(out);
+    long long data_start = ((inode_end - 1) / BLOCKSIZE + 1) * BLOCKSIZE; // round up to multiples of BLOCKSIZE
+    sb->data_start = sb->free_block = data_start;
     fseek(out, BOOTSIZE, SEEK_SET);
-    fwrite(&sb, sizeof(sb_t), 1, out);
+    fwrite(sb, sizeof(sb_t), 1, out);
 
     // blocks
     void* buf = calloc(1, BLOCKSIZE);
-    fseek(out, sb.data_start, SEEK_SET);
+    fseek(out, sb->data_start, SEEK_SET);
     while (ftell(out) < disksize) {
         long long next_block = (ftell(out) + BLOCKSIZE == disksize) ? (-1) : (ftell(out) + BLOCKSIZE);
         *((long long*) buf) = next_block;
         fwrite(buf, 1, BLOCKSIZE, out);
     }
+
+    free(sb);
+    free(inode);
     free(buf);
 }

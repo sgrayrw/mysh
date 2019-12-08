@@ -5,7 +5,7 @@
       <paths name="bmc">
         <serverdata>
           <mappings>
-            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/ywang13/cs355/fs" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

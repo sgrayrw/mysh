@@ -128,7 +128,7 @@ vnode_t* get_vnode(vnode_t* parent, char* filename) {
     fseek(disk, parent->inode, SEEK_SET);
     fread(&dir, sizeof(inode_t), 1, disk);
 
-    
+
 
     return NULL;
 }
