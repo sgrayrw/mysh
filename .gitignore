@@ -6,3 +6,4 @@
 vgcore*
 mysh
 cmake-build*
+.idea/
