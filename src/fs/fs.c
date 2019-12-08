@@ -123,6 +123,16 @@ vnode_t* get_vnode(vnode_t* parent, char* filename) {
     }
 
     // load from disk
+    FILE* disk = disks[parent->disk];
+    inode_t dir;
+    fseek(disk, parent->inode, SEEK_SET);
+    fread(&dir, sizeof(inode_t), 1, disk);
 
+    
 
+    return NULL;
+}
+
+dirent_t* readdir(vnode_t* dir, int n) {
+    return NULL;
 }

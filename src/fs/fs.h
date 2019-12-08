@@ -16,6 +16,7 @@ typedef struct {
     struct vnode_t* parent;
     struct vnode_t* children;
     struct vnode_t* next;
+    int cur_entry; /* current entry for f_readdir */
 } vnode_t;
 
 typedef struct {
@@ -49,5 +50,6 @@ int f_umount(const char* target);
 
 int split_path(const char*, char***);
 vnode_t* get_vnode(vnode_t* parent, char* filename);
+dirent_t* readdir(vnode_t* dir, int n);
 
 #endif
