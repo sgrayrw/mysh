@@ -40,4 +40,6 @@ int f_rmdir(const char* pathname);
 int f_mount(const char* source, const char* target);
 int f_umount(const char* target);
 
+int split_path(const char*, char***);
+
 #endif

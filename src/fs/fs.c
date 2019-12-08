@@ -1,8 +1,15 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fs.h"
+#include "disk.h"
 
-int f_open(const char* pathname, const char* mode)  {
 
+
+int f_open(const char* pathname, const char* mode) {
+    char* name;
+    char* next;
+    name = strtok(pathname, )
 }
 
 ssize_t f_read(int fd, void *buf, size_t count) {
@@ -60,4 +67,24 @@ int f_mount(const char* source, const char* target) {
 
 int f_umount(const char* target) {
 
+}
+
+int split_path(const char* pathname, char*** result) {
+    char* name;
+    char* delim = "/";
+    int count = 0;
+    if ((name = strtok(pathname, delim)) == NULL){
+        return count;
+    }
+    *result = malloc(sizeof(char*));
+    **result = malloc(strlen(name));
+    strcpy(**result, name);
+    count += 1;
+    while((name = strtok(NULL, delim)) != NULL){
+        count += 1;
+        *result = realloc(*result,sizeof(char*)*count);
+        *((*result)+count-1) = malloc(strlen(name));
+        strcpy(*((*result)+count-1), name);
+    }
+    return count;
 }
