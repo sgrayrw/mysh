@@ -11,12 +11,12 @@ int f_open(const char* pathname, const char* mode) {
     vnode_t* current = vnodes;
     for (int i = 0; i < length-1; i++){
         char* name = *(path+i);
-        if ((current = find_vnode(current, name)) == NULL){
+        if ((current = get_vnode(current, name)) == NULL){
             return FAILURE;
         }
     }
     char* name = *(path+length-1);
-    if ((current = find_vnode(current, name)) == NULL){
+    if ((current = get_vnode(current, name)) == NULL){
 
         return FAILURE;
     }
@@ -111,7 +111,7 @@ int split_path(const char* pathname, char*** result) {
     return count;
 }
 
-vnode_t* find_vnode(vnode_t* parent, char* filename) {
+vnode_t* get_vnode(vnode_t* parent, char* filename) {
     // find from existing vnodes
     vnode_t* cur = (vnode_t*) parent->children;
     if (cur) {
@@ -123,6 +123,6 @@ vnode_t* find_vnode(vnode_t* parent, char* filename) {
     }
 
     // load from disk
-    
+
 
 }

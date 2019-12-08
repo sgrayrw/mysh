@@ -7,6 +7,7 @@
 #define SUCCESS 0
 #define FAILURE -1
 #define MAX_NAME_LEN (BLOCKSIZE / 2 - sizeof(long long) - 1)
+#define N_DISKS 16
 
 typedef struct {
     long long inode;
@@ -28,7 +29,8 @@ typedef struct {
 } dirent_t;
 
 vnode_t* vnodes; // root of vnode tree
-sb_t superblock;
+sb_t superblock[N_DISKS];
+FILE* disks[N_DISKS];
 
 int f_open(const char* pathname, const char* mode);
 ssize_t f_read(int fd, void *buf, size_t count);
@@ -46,6 +48,6 @@ int f_mount(const char* source, const char* target);
 int f_umount(const char* target);
 
 int split_path(const char*, char***);
-vnode_t* find_vnode(vnode_t* parent, char* filename);
+vnode_t* get_vnode(vnode_t* parent, char* filename);
 
 #endif
