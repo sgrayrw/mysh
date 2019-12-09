@@ -16,6 +16,7 @@ typedef struct sb_t {
     long long data_start;
     long long free_inode;
     long long free_block;
+    long long root_inode;
 } sb_t;
 
 typedef struct inode_t {

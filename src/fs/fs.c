@@ -68,25 +68,73 @@ int f_rmdir(const char* pathname) {
 }
 
 int f_mount(const char* source, const char* target) {
-    // search for disk file `source` OUTSIDE the shell
+    // check target mount point
+    char** tokens;
+    int length = split_path(target, &tokens);
+    vnode_t* parentdir = vnodes;
+    for (int i = 0; i < length - 1; ++i) {
+        parentdir = get_vnode(parentdir, tokens[i]);
+        if (!parentdir) {
+            printf("mount: invalid mount path %s\n", target);
+            return FAILURE;
+        }
+    }
+    if (get_vnode(parentdir, tokens[length - 1])) {
+        printf("mount: mount point %s already exists\n", tokens[length - 1]);
+        return FAILURE;
+    }
+
+    // load disk
+    if (n_disks == MAX_DISKS) {
+        printf("mount: max number of mounted disks (10) reached\n");
+        return FAILURE;
+    }
     FILE* disk = fopen(source, "r");
     if (!disk) {
         printf("mount: disk %s does not exist\n", source);
         return FAILURE;
     }
+    disks[n_disks] = disk;
+    sb_t* sb = malloc(sizeof(sb_t));
+    fread(sb, sizeof(sb_t), 1, disk);
+    superblocks[n_disks] = sb;
 
-    char** tokens;
-    int length = split_path(target, &tokens);
-    vnode_t* cur = vnodes;
-    for (int i = 0; i < length - 1; ++i) {
-        cur = find_vnode(cur, tokens[i]);
+    // add vnode corresponding to the mount point
+    vnode_t* mountpoint = malloc(sizeof(vnode_t));
+    mountpoint->inode = sb->root_inode;
+    mountpoint->disk = n_disks;
+    strcpy(mountpoint->name, tokens[length-1]);
+    mountpoint->parent = parentdir;
+    mountpoint->children = NULL;
+    if (!parentdir->children) {
+        parentdir->children = mountpoint;
+        mountpoint->next = mountpoint;
+        mountpoint->prev = mountpoint;
+    } else {
+        mountpoint->next = parentdir->children->next;
+        mountpoint->next->prev = mountpoint;
+        mountpoint->prev = parentdir->children;
+        mountpoint->prev->next = mountpoint;
     }
 
-
+    return SUCCESS;
 }
 
 int f_umount(const char* target) {
 
+}
+
+void init() {
+    vnodes = NULL;
+    n_disks = 0;
+    for (int i = 0; i < MAX_DISKS; ++i) {
+        disks[i] = NULL;
+        superblocks[i] = NULL;
+    }
+}
+
+void term() {
+    // TODO: free
 }
 
 int split_path(const char* pathname, char*** tokens) {
@@ -127,6 +175,7 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
     int n = 0;
     while (readdir(parentdir, n, &dirent) != FAILURE) {
         if (strcmp(dirent.name, filename) != 0) {
+            n++;
             continue;
         }
 

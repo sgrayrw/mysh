@@ -6,7 +6,7 @@
 
 #define SUCCESS 0
 #define FAILURE -1
-#define N_DISKS 16
+#define MAX_DISKS 16
 
 typedef struct vnode_t {
     long long inode;
@@ -16,7 +16,7 @@ typedef struct vnode_t {
     struct vnode_t* children;
     struct vnode_t* next;
     struct vnode_t* prev;
-    int cur_entry; /* current entry for f_readdir */
+    int cur_entry; // next entry to return for f_readdir
 } vnode_t;
 
 typedef struct file_t {
@@ -25,9 +25,15 @@ typedef struct file_t {
 } file_t;
 
 vnode_t* vnodes; // root of vnode tree
-sb_t superblock[N_DISKS];
-FILE* disks[N_DISKS];
+int n_disks;
+FILE* disks[MAX_DISKS]; // disks mounted
+sb_t* superblocks[MAX_DISKS]; // superblock for each disk
 
+/*
+ * IMPORTANT:
+ * all `pathname` should be absolute paths starting with `/`
+ * e.g. `/usr/su/`
+ */
 int f_open(const char* pathname, const char* mode);
 ssize_t f_read(int fd, void* buf, size_t count);
 ssize_t f_write(int fd, const void *buf, size_t count);
@@ -43,6 +49,9 @@ int f_rmdir(const char* pathname);
 int f_mount(const char* source, const char* target);
 int f_umount(const char* target);
 
+void init();
+void term();
+void dump(); // dump vnode tree for debugging
 int split_path(const char* pathname, char*** tokens);
 vnode_t* get_vnode(vnode_t* parentdir, char* filename);
 int readdir(vnode_t* dir, int n, dirent_t* dirent); // n: return the nth dirent
