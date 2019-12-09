@@ -104,17 +104,26 @@ int f_mount(const char* source, const char* target) {
     mountpoint->inode = sb->root_inode;
     mountpoint->disk = n_disks;
     strcpy(mountpoint->name, tokens[length-1]);
-    mountpoint->parent = parentdir;
-    mountpoint->children = NULL;
-    if (!parentdir->children) {
-        parentdir->children = mountpoint;
+    if (length == 0) {
+        // mount at `/` (for the first disk)
+        mountpoint->parent = NULL;
+        mountpoint->children = NULL;
         mountpoint->next = mountpoint;
         mountpoint->prev = mountpoint;
+        vnodes = mountpoint;
     } else {
-        mountpoint->next = parentdir->children->next;
-        mountpoint->next->prev = mountpoint;
-        mountpoint->prev = parentdir->children;
-        mountpoint->prev->next = mountpoint;
+        mountpoint->parent = parentdir;
+        mountpoint->children = NULL;
+        if (!parentdir->children) {
+            parentdir->children = mountpoint;
+            mountpoint->next = mountpoint;
+            mountpoint->prev = mountpoint;
+        } else {
+            mountpoint->next = parentdir->children->next;
+            mountpoint->next->prev = mountpoint;
+            mountpoint->prev = parentdir->children;
+            mountpoint->prev->next = mountpoint;
+        }
     }
 
     return SUCCESS;
