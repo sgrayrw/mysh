@@ -1,6 +1,7 @@
 #ifndef FS_H
 #define FS_H
 
+#include <stdio.h>
 #include <sys/types.h>
 #include "disk.h"
 
@@ -24,10 +25,10 @@ typedef struct file_t {
     long long position; // file position indicator
 } file_t;
 
-vnode_t* vnodes; // root of vnode tree
-int n_disks;
-FILE* disks[MAX_DISKS]; // disks mounted
-sb_t* superblocks[MAX_DISKS]; // superblock for each disk
+static vnode_t* vnodes; // root of vnode tree
+static int n_disks;
+static FILE* disks[MAX_DISKS]; // disks mounted
+static sb_t* superblocks[MAX_DISKS]; // superblock for each disk
 
 /*
  * IMPORTANT:
@@ -52,9 +53,12 @@ int f_umount(const char* target);
 void init();
 void term();
 void dump(); // dump vnode tree for debugging
-int split_path(const char* pathname, char*** tokens);
-vnode_t* get_vnode(vnode_t* parentdir, char* filename);
-int readdir(vnode_t* dir, int n, dirent_t* dirent); // n: return the nth dirent
-long long get_block(int n_disk);
+
+static void rm_vnode(vnode_t* vnode);
+static void dump_vnode(vnode_t* vnode, int depth);
+static int split_path(const char* pathname, char*** tokens);
+static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
+static int readdir(vnode_t* dir, int n, dirent_t* dirent); // n: return the nth dirent
+static long long get_block(int n_disk);
 
 #endif

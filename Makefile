@@ -1,4 +1,4 @@
-TARGET = mysh format
+TARGET = mysh format test
 MYSH = mysh.o sighand.o job.o builtin.o
 
 all: $(TARGET)

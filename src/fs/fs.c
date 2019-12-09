@@ -4,7 +4,6 @@
 #include "fs.h"
 #include "disk.h"
 
-
 int f_open(const char* pathname, const char* mode) {
     char** path;
     int length = split_path(pathname, &path);
@@ -79,14 +78,14 @@ int f_mount(const char* source, const char* target) {
             return FAILURE;
         }
     }
-    if (get_vnode(parentdir, tokens[length - 1])) {
-        printf("mount: mount point %s already exists\n", tokens[length - 1]);
+    if (length > 0 && get_vnode(parentdir, tokens[length - 1])) {
+        printf("mount: mount point %s already exists\n", target);
         return FAILURE;
     }
 
     // load disk
     if (n_disks == MAX_DISKS) {
-        printf("mount: max number of mounted disks (10) reached\n");
+        printf("mount: max number of mounted disks %d reached\n", MAX_DISKS);
         return FAILURE;
     }
     FILE* disk = fopen(source, "r");
@@ -103,15 +102,16 @@ int f_mount(const char* source, const char* target) {
     vnode_t* mountpoint = malloc(sizeof(vnode_t));
     mountpoint->inode = sb->root_inode;
     mountpoint->disk = n_disks;
-    strcpy(mountpoint->name, tokens[length-1]);
     if (length == 0) {
         // mount at `/` (for the first disk)
+        strcpy(mountpoint->name, "/");
         mountpoint->parent = NULL;
         mountpoint->children = NULL;
         mountpoint->next = mountpoint;
         mountpoint->prev = mountpoint;
         vnodes = mountpoint;
     } else {
+        strcpy(mountpoint->name, tokens[length - 1]);
         mountpoint->parent = parentdir;
         mountpoint->children = NULL;
         if (!parentdir->children) {
@@ -125,6 +125,7 @@ int f_mount(const char* source, const char* target) {
             mountpoint->prev->next = mountpoint;
         }
     }
+    n_disks++;
 
     return SUCCESS;
 }
@@ -143,7 +144,33 @@ void init() {
 }
 
 void term() {
-    // TODO: free
+    rm_vnode(vnodes);
+    for (int i = 0; i < n_disks; ++i) {
+        fclose(disks[i]);
+        free(superblocks[i]);
+    }
+}
+
+void rm_vnode(vnode_t* vnode) {
+    // TODO: cleanup tree
+}
+
+void dump() {
+    if (vnodes)
+        dump_vnode(vnodes, 1);
+}
+
+void dump_vnode(vnode_t* vnode, int depth) {
+    printf("%s\n", vnode->name);
+    vnode_t* child = vnode->children;
+    if (child) {
+        do {
+            for (int i = 0; i < depth; ++i)
+                printf("|-- ");
+            dump_vnode(child, depth + 1);
+            child = child->next;
+        } while (strcmp(child->name, vnode->children->name) != 0);
+    }
 }
 
 int split_path(const char* pathname, char*** tokens) {
@@ -170,13 +197,13 @@ int split_path(const char* pathname, char*** tokens) {
 
 vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
     // find from existing vnodes
-    vnode_t* cur = parentdir->children;
-    if (cur) {
+    vnode_t* child = parentdir->children;
+    if (child) {
         do {
-            if (strcmp(cur->name, filename) == 0)
-                return cur;
-            cur = cur->next;
-        } while (cur != parentdir->children);
+            if (strcmp(child->name, filename) == 0)
+                return child;
+            child = child->next;
+        } while (strcmp(child->name, parentdir->children->name) != 0);
     }
 
     // load from disk
@@ -318,9 +345,8 @@ long long get_block(int n_disk) {
     FILE* disk = disks[n_disk];
     sb_t* sb = superblocks[n_disk];
 
-    if (sb->free_block == -1) {
+    if (sb->free_block == -1)
         return FAILURE;
-    }
 
     // get next free block
     long long free_block = sb->free_block;
