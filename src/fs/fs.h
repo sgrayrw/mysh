@@ -55,5 +55,6 @@ void dump(); // dump vnode tree for debugging
 int split_path(const char* pathname, char*** tokens);
 vnode_t* get_vnode(vnode_t* parentdir, char* filename);
 int readdir(vnode_t* dir, int n, dirent_t* dirent); // n: return the nth dirent
+long long get_block(int n_disk);
 
 #endif

@@ -207,5 +207,122 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
 }
 
 int readdir(vnode_t* dir, int n, dirent_t* dirent) {
-    return FAILURE;
+    inode_t inode;
+    FILE* disk = disks[dir->disk];
+    fseek(disk, dir->inode, SEEK_SET);
+    fread(&inode, sizeof(inode_t), 1, disk);
+
+    if (n > inode.size)
+        return FAILURE;
+
+    long long block = 0;
+    // dblocks
+    for (int i = 0; i < N_DBLOCKS && n >= 0; ++i) {
+        block = inode.dblocks[i];
+        n -= 2; // two dirents in a block
+    }
+    // iblock
+    fseek(disk, inode.iblock, SEEK_SET);
+    while (ftell(disk) - inode.iblock < BLOCKSIZE && n >= 0) {
+        fread(&block, sizeof(long long), 1, disk);
+        n -= 2;
+    }
+    // i2block
+    fseek(disk, inode.i2block, SEEK_SET);
+    while (ftell(disk) - inode.i2block < BLOCKSIZE && n >= 0) {
+        long long iblock;
+        fread(&iblock, sizeof(long long), 1, disk);
+        long loop1 = ftell(disk);
+
+        fseek(disk, iblock, SEEK_SET);
+        while (ftell(disk) - iblock < BLOCKSIZE && n >= 0) {
+            fread(&block, sizeof(long long), 1, disk);
+            n -= 2;
+        }
+        fseek(disk, loop1, SEEK_SET);
+    }
+    // i3block
+    fseek(disk, inode.i3block, SEEK_SET);
+    while (ftell(disk) - inode.i3block < BLOCKSIZE && n >= 0) {
+        long long i2block;
+        fread(&i2block, sizeof(long long), 1, disk);
+        long loop2 = ftell(disk);
+
+        fseek(disk, i2block, SEEK_SET);
+        while (ftell(disk) - i2block < BLOCKSIZE && n >= 0) {
+            long long iblock;
+            fread(&iblock, sizeof(long long), 1, disk);
+            long loop1 = ftell(disk);
+
+            fseek(disk, iblock, SEEK_SET);
+            while (ftell(disk) - iblock < BLOCKSIZE && n >= 0) {
+                fread(&block, sizeof(long long), 1, disk);
+                n -= 2;
+            }
+            fseek(disk, loop1, SEEK_SET);
+        }
+        fseek(disk, loop2, SEEK_SET);
+    }
+    // i4block
+    fseek(disk, inode.i4block, SEEK_SET);
+    while (ftell(disk) - inode.i4block < BLOCKSIZE && n >= 0) {
+        long long i3block;
+        fread(&i3block, sizeof(long long), 1, disk);
+        long loop3 = ftell(disk);
+
+        fseek(disk, i3block, SEEK_SET);
+        while (ftell(disk) - i3block < BLOCKSIZE && n >= 0) {
+            long long i2block;
+            fread(&i2block, sizeof(long long), 1, disk);
+            long loop2 = ftell(disk);
+
+            fseek(disk, i2block, SEEK_SET);
+            while (ftell(disk) - i2block < BLOCKSIZE && n >= 0) {
+                long long iblock;
+                fread(&iblock, sizeof(long long), 1, disk);
+                long loop1 = ftell(disk);
+
+                fseek(disk, iblock, SEEK_SET);
+                while (ftell(disk) - iblock < BLOCKSIZE && n >= 0) {
+                    fread(&block, sizeof(long long), 1, disk);
+                    n -= 2;
+                }
+                fseek(disk, loop1, SEEK_SET);
+            }
+            fseek(disk, loop2, SEEK_SET);
+        }
+        fseek(disk, loop3, SEEK_SET);
+    }
+
+    if (block == 0 || n >= 0)
+        return FAILURE;
+    else if (n == -2)
+        fseek(disk, block, SEEK_SET);
+    else
+        fseek(disk, block + (long long) sizeof(dirent_t), SEEK_SET);
+
+    fread(dirent, sizeof(dirent_t), 1, disk);
+    return SUCCESS;
+}
+
+long long get_block(int n_disk) {
+    FILE* disk = disks[n_disk];
+    sb_t* sb = superblocks[n_disk];
+
+    if (sb->free_block == -1) {
+        return FAILURE;
+    }
+
+    // get next free block
+    long long free_block = sb->free_block;
+
+    // update free block list in superblock
+    fseek(disk, free_block, SEEK_SET);
+    fread(&(sb->free_block), sizeof(long long), 1, disk);
+
+    // update superblock in disk
+    fseek(disk, BOOTSIZE, SEEK_SET);
+    fwrite(sb, sizeof(sb_t), 1, disk);
+
+    return free_block;
 }
