@@ -1,11 +1,6 @@
 #ifndef BUILTIN_H
 #define BUILTIN_H
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-
 extern struct termios mysh_tc;
 
 // builtin functions

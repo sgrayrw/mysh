@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "error.h"
 #include "fs.h"
 
 int main() {

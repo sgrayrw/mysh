@@ -1,6 +1,26 @@
-#include "mysh.h"
+#include <ctype.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <sys/wait.h>
+#include <termios.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-#define DELIMITERS ";& \f\n\r\t\v"
+#include "mysh.h"
+#include "job.h"
+#include "builtin.h"
+#include "sighand.h"
+
+// global vars
+bool print;
+char *line; // dynamically allocated in read_line()
+char **tokens, **args; // dynamically allocated in parse_line()
+int argc, tokens_len;
+struct Node* jobs = NULL;
+struct Node* logic_jobs = NULL;
+int jobcnt = 0;
+struct termios mysh_tc;
 
 int main() {
     jobs = NULL;

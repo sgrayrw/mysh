@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "error.h"
 #include "fs.h"
-#include "disk.h"
+
+errno error;
 
 int f_open(const char* pathname, const char* mode) {
     char** path;
@@ -74,23 +76,23 @@ int f_mount(const char* source, const char* target) {
     for (int i = 0; i < length - 1; ++i) {
         parentdir = get_vnode(parentdir, tokens[i]);
         if (!parentdir) {
-            printf("mount: invalid mount path %s\n", target);
+            error = INVALID_PATH;
             return FAILURE;
         }
     }
     if (length > 0 && get_vnode(parentdir, tokens[length - 1])) {
-        printf("mount: mount point %s already exists\n", target);
+        error = TARGET_EXISTS;
         return FAILURE;
     }
 
     // load disk
     if (n_disks == MAX_DISKS) {
-        printf("mount: max number of mounted disks %d reached\n", MAX_DISKS);
+        error = DISKS_EXCEEED;
         return FAILURE;
     }
     FILE* disk = fopen(source, "r");
     if (!disk) {
-        printf("mount: disk %s does not exist\n", source);
+        error = INVALID_SOURCE;
         return FAILURE;
     }
     disks[n_disks] = disk;
@@ -196,6 +198,12 @@ int split_path(const char* pathname, char*** tokens) {
 }
 
 vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
+    // `.` and `..`
+    if (strcmp(filename, ".") == 0)
+        return parentdir;
+    else if (strcmp(filename, "..") == 0)
+        return parentdir->parent;
+
     // find from existing vnodes
     vnode_t* child = parentdir->children;
     if (child) {

@@ -1,5 +1,11 @@
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+#include <stdio.h>
+#include <termios.h>
+#include <stdbool.h>
+
 #include "job.h"
-#include "mysh.h"
 
 struct Node* get_node_jid(int jid) {
     if (jobs == NULL) {

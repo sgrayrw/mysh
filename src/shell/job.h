@@ -1,12 +1,6 @@
 #ifndef JOB_H
 #define JOB_H
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <termios.h>
-#include <stdbool.h>
-
 typedef enum {
     Running,
     Suspended,

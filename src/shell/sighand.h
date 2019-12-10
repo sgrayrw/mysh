@@ -1,12 +1,6 @@
 #ifndef SIGHAND_H
 #define SIGHAND_H
 
-#include <signal.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-
 #define SIG_MIN 1
 
 // sighandlers

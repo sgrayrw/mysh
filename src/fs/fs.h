@@ -5,8 +5,6 @@
 #include <sys/types.h>
 #include "disk.h"
 
-#define SUCCESS 0
-#define FAILURE -1
 #define MAX_DISKS 16
 
 typedef struct vnode_t {

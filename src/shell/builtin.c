@@ -1,3 +1,11 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <termios.h>
+#include <signal.h>
+#include <unistd.h>
+
 #include "builtin.h"
 #include "job.h"
 #include "mysh.h"
