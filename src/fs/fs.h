@@ -1,7 +1,6 @@
 #ifndef FS_H
 #define FS_H
 
-#include <stdio.h>
 #include <sys/types.h>
 #include "disk.h"
 
@@ -22,11 +21,6 @@ typedef struct file_t {
     vnode_t vnode;
     long long position; // file position indicator
 } file_t;
-
-static vnode_t* vnodes; // root of vnode tree
-static int n_disks;
-static FILE* disks[MAX_DISKS]; // disks mounted
-static sb_t* superblocks[MAX_DISKS]; // superblock for each disk
 
 /*
  * IMPORTANT:

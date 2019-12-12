@@ -5,6 +5,10 @@
 #include "fs.h"
 
 errno error;
+static vnode_t* vnodes; // root of vnode tree
+static int n_disks;
+static FILE* disks[MAX_DISKS]; // disks mounted
+static sb_t* superblocks[MAX_DISKS]; // superblock for each disk
 
 int f_open(const char* pathname, const char* mode) {
     char** path;
@@ -87,7 +91,7 @@ int f_mount(const char* source, const char* target) {
 
     // load disk
     if (n_disks == MAX_DISKS) {
-        error = DISKS_EXCEEED;
+        error = DISKS_EXCEEDED;
         return FAILURE;
     }
     FILE* disk = fopen(source, "r");

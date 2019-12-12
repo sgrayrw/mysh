@@ -5,10 +5,13 @@
 #define FAILURE -1
 
 typedef enum {
+    // general
     INVALID_PATH = 1,
     INVALID_SOURCE,
     TARGET_EXISTS,
-    DISKS_EXCEEED,
+
+    // fmount
+    DISKS_EXCEEDED,
 } errno;
 
 extern errno error;
