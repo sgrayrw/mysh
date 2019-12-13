@@ -9,7 +9,7 @@
 #include "builtin.h"
 #include "job.h"
 #include "mysh.h"
-#include "fs.h"
+#include "../fs/fs.h"
 
 struct Node* lastnode;
 char** currenttokens;
