@@ -252,19 +252,18 @@ issues to think about:
 
 
 void ls_directory(int fd, mode_F, mode_l) {
-    dirent_t dentry;
-    char indicator;
-    int fd_sub;
-    while (f_readdir(fd, char **filename, inode_t *inode) == SUCCESS) {  //TODO
+    char indicator, **filename;
+    inode_t *inode;
+    while (f_readdir(fd, filename, inode) == SUCCESS) {  //TODO
         indicator = 0;
         if (mode_F && dentry.type == DIR) {
             indicator = '/';
         }
         if (mode_l) {
             //TODO
-            printf("%s%c\n", dentry.name, indicator);
+            printf("%s%c\n", *filename, indicator);
         } else {
-            printf("%s%c\t", dentry.name, indicator);
+            printf("%s%c\t", *filename, indicator);
             printf("\n");
         }
     }
