@@ -10,6 +10,7 @@
 #include "job.h"
 #include "mysh.h"
 #include "../fs/fs.h"
+#include "../fs/error.h"
 
 struct Node* lastnode;
 char** currenttokens;
@@ -256,7 +257,7 @@ void ls_directory(int fd, mode_F, mode_l) {
     inode_t *inode;
     while (f_readdir(fd, filename, inode) == SUCCESS) {  //TODO
         indicator = 0;
-        if (mode_F && dentry.type == DIR) {
+        if (mode_F && inode->type == DIR) {
             indicator = '/';
         }
         if (mode_l) {
@@ -292,7 +293,7 @@ void my_ls() {
     int fd;
 
     if (no_arguments) {
-        fd = f_opendir(current_directory);
+        fd = f_opendir(getwd());
         if (fd == FAILURE) {
             fprintf(stderr, "Exception occurred when trying to open the current directory\n");
         }
@@ -364,7 +365,7 @@ void cd() {
 }
 
 void pwd() {
-    printf("%s", current_directory);
+    printf("%s", getwd());
 }
 
 void cat() {
