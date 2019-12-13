@@ -40,6 +40,7 @@ typedef struct inode_t {
 typedef struct dirent_t {
     long long inode;
     char name[MAX_NAME_LEN + 1];
+    f_type type;
 } dirent_t;
 
 #endif

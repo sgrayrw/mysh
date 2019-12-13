@@ -55,4 +55,7 @@ static vnode_t* traverse_path(char** path, int length);
 static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n: return the nth dirent
 static long long get_block(int n_disk);
 
+char *getwd();
+int setwd(char *pathname);
+
 #endif

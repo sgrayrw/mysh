@@ -9,6 +9,7 @@
 #include "builtin.h"
 #include "job.h"
 #include "mysh.h"
+#include "fs.h"
 
 struct Node* lastnode;
 char** currenttokens;
@@ -105,7 +106,7 @@ void my_kill(){
             }
             currentpid = currentjob->pid;
         }
-        if(kill(currentpid,CURRENTSIG)!=0){
+        if(kill(-currentpid,CURRENTSIG)!=0){
             fprintf(stderr, "Error sending signal\n");
         }
 
@@ -144,7 +145,7 @@ void my_fg(){
     struct termios* currenttermios = currentjob->tcattr;
     int statusnum;
     int* status = &statusnum;
-    kill(currentpid,SIGCONT);
+    kill(-currentpid,SIGCONT);
     waitpid(currentpid,status,WCONTINUED | WNOHANG);
     tcsetpgrp(STDIN_FILENO,currentpid);
     tcsetattr(STDIN_FILENO,TCSADRAIN,currenttermios);
@@ -167,7 +168,7 @@ void my_bg(){
         currentjob = lastnode->job;
         currentpid = currentjob->pid;
         print_job(currentjob, true);
-        kill(currentpid,SIGCONT);
+        kill(-currentpid,SIGCONT);
         logic_update(lastnode);
         return;
     }
@@ -205,7 +206,7 @@ void my_bg(){
         //printf("jobid:%d\n",currentjob->job->jid);
         logic_update(currentnode);
         print_job(currentjob,true);
-        kill(currentpid,SIGCONT);
+        kill(-currentpid,SIGCONT);
     }
 }
 
@@ -234,4 +235,155 @@ int getlastnode_sus(){
         }
     }
     return true;
+}
+
+
+
+/****************************
+
+hw7
+
+issues to think about:
+    1. permission
+    2. redirection
+
+****************************/
+
+
+
+void ls_directory(int fd, mode_F, mode_l) {
+    dirent_t dentry;
+    char indicator;
+    int fd_sub;
+    while (f_readdir(fd, char **filename, inode_t *inode) == SUCCESS) {  //TODO
+        indicator = 0;
+        if (mode_F && dentry.type == DIR) {
+            indicator = '/';
+        }
+        if (mode_l) {
+            //TODO
+            printf("%s%c\n", dentry.name, indicator);
+        } else {
+            printf("%s%c\t", dentry.name, indicator);
+            printf("\n");
+        }
+    }
+}
+
+void my_ls() {
+    bool mode_F = false, mode_l = false, no_arguments = true;
+    int index;
+    for (index = 1; index < length; index++) {
+        if (currenttokens[index][0] == '_' && strlen(currenttokens[index] > 1)) {
+            for (int i = 1; i < strlen(currenttokens[index]); i++) {
+                if (currenttokens[index][i] == 'F') {
+                    mode_F = true;
+                } else if (currenttokens[index][i] == 'l') {
+                    mode_l = true;
+                } else {
+                    fprintf(stderr, "ls: invalid option -- '%c'\n");
+                    return;
+                }
+            }
+        } else {
+            no_arguments = false;
+        }
+    }
+
+    int fd;
+
+    if (no_arguments) {
+        fd = f_opendir(current_directory);
+        if (fd == FAILURE) {
+            fprintf(stderr, "Exception occurred when trying to open the current directory\n");
+        }
+        ls_directory(fd, mode_F, mode_l);
+        f_closedir(fd);
+
+    } else {
+        bool first_argument = true;
+        char *path;
+        int path_length;
+        inode_t stats;
+        for (index = 1; index < length; index++) {
+            path = currenttokens[index];
+            path_length = strlen(path);
+            if (path_length == 1 || path[0] != '_') {
+
+                if (!first_argument) {
+                    printf("\n");
+                }
+
+                fd = f_opendir(currenttokens[index]);
+
+                if (fd == FAILURE) {
+                    fd = f_open(currenttokens[index], "r");
+                    if (fd == FAILURE) {
+                        //TODO error handling
+                    } else {
+                        if (mode_l) {
+                            f_stat(fd, &stats);
+                            //TODO long list format
+                            printf("%lld%s\n", stats.size, currenttokens[index]);
+                        } else {
+                            printf("%s\n", currenttokens[index]);
+                        }
+                        f_close(fd);
+                    }
+
+                } else {
+                    ls_directory(fd, mode_F, mode_l);
+                    f_closedir(fd);
+                }
+
+                first_argument = false;
+            }
+        }
+    }
+}
+
+void chmod() {
+
+}
+
+void mkdir() {
+
+}
+
+void rmdir() {
+
+}
+
+void cd() {
+    if (length > 2) {
+        fprintf(stderr, "cd: too many arguments\n");
+    } else if (length == 2){
+        if (f_setdir(currenttokens[1]) == FAILURE) {
+            //TODO: error handling
+        }
+    }
+}
+
+void pwd() {
+    printf("%s", current_directory);
+}
+
+void cat() {
+
+}
+
+void more() {
+
+}
+
+void rm() {
+
+}
+
+void mount() {
+
+}
+
+void unmount() {
+
 }
