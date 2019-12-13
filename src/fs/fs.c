@@ -225,8 +225,9 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
 
     // load from disk
     dirent_t dirent;
+    inode_t inode;
     int n = 0;
-    while (readdir(parentdir, n, &dirent) != FAILURE) {
+    while (readdir(parentdir, n, &dirent, &inode) != FAILURE) {
         if (strcmp(dirent.name, filename) != 0) {
             n++;
             continue;
