@@ -142,7 +142,23 @@ int f_mount(const char* source, const char* target) {
 }
 
 int f_umount(const char* target) {
-
+    // check target mount point
+    char** path;
+    int length = split_path(target, &path);
+    vnode_t* mountpoint = vnodes;
+    for (int i = 0; i < length; ++i) {
+        mountpoint = get_vnode(mountpoint, path[i]);
+        if (!mountpoint) {
+            error = INVALID_PATH;
+            return FAILURE;
+        }
+        if (mountpoint->type != DIR) {
+            error = NOT_DIR;
+            return FAILURE;
+        }
+    }
+    rm_vnode(mountpoint);
+    return SUCCESS;
 }
 
 void init() {
