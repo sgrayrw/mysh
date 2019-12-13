@@ -59,4 +59,7 @@ static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
 static int readdir(vnode_t* dir, int n, dirent_t* dirent); // n: return the nth dirent
 static long long get_block(int n_disk);
 
+char *getwd();
+int setwd(char *pathname);
+
 #endif
