@@ -381,7 +381,11 @@ void my_rm() {
 }
 
 void my_mount() {
-
+    if (length != 3) {
+        fprintf(stderr, "error code to be written\n"); //TODO
+    } else {
+        f_mount(currenttokens[1], currenttokens[2]);  //TODO
+    }
 }
 
 void my_unmount() {
