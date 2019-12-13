@@ -10,5 +10,6 @@ void my_jobs(); // list all background jobs
 void my_kill(); // kill a background job
 void my_fg(); // put a specific job to the foreground
 void my_bg(); // continue a specific job in the background
+void my_ls();
 
 #endif
