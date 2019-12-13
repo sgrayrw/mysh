@@ -255,10 +255,10 @@ issues to think about:
 
 void ls_directory(int fd, bool mode_F, bool mode_l) {
     char indicator, *filename;
-    inode_t *inode;
-    while (f_readdir(fd, &filename, inode) == SUCCESS) {  //TODO
+    inode_t inode;
+    while (f_readdir(fd, &filename, &inode) == SUCCESS) {  //TODO
         indicator = 0;
-        if (mode_F && inode->type == DIR) {
+        if (mode_F && inode.type == DIR) {
             indicator = '/';
         }
         if (mode_l) {
