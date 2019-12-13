@@ -39,6 +39,9 @@ int builtin(char** neededtokens, int argclength){
         } else if (strcmp(currenttokens[0],"fg")==0) {
             my_fg();
             return true;
+        } else if (strcmp(currenttokens[0], "mount") == 0) {
+            my_mount();
+            return true;
         }
     }
     return false;
