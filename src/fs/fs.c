@@ -5,6 +5,7 @@
 #include "fs.h"
 
 errno error;
+char* wd;
 static vnode_t* vnodes; // root of vnode tree
 static int n_disks;
 static FILE* disks[MAX_DISKS]; // disks mounted
@@ -26,6 +27,10 @@ int f_open(const char* pathname, const char* mode) {
         return FAILURE;
     }
     return SUCCESS;
+}
+
+int f_close(int fd) {
+
 }
 
 ssize_t f_read(int fd, void *buf, size_t count) {
@@ -137,7 +142,9 @@ int f_mount(const char* source, const char* target) {
     }
     n_disks++;
 
-    free(path);
+//    for (int i = 0; i < length; ++i)
+//        free(path[i]);
+//    free(path);
     return SUCCESS;
 }
 
@@ -169,6 +176,7 @@ void init() {
         disks[i] = NULL;
         superblocks[i] = NULL;
     }
+    wd = NULL;
 }
 
 void term() {
@@ -177,6 +185,7 @@ void term() {
         fclose(disks[i]);
         free(superblocks[i]);
     }
+    free(wd);
 }
 
 void rm_vnode(vnode_t* vnode) {
@@ -199,6 +208,10 @@ void dump_vnode(vnode_t* vnode, int depth) {
             child = child->next;
         } while (strcmp(child->name, vnode->children->name) != 0);
     }
+}
+
+int set_wd(const char* pathname) {
+
 }
 
 int split_path(const char* pathname, char*** tokens) {
