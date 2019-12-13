@@ -102,7 +102,7 @@ void my_kill(){
             if ((jobid = atoi(currenttokens[i]+1))==0){
                 printf("kill: illegal pid: %s\n", currenttokens[i]);
                 return;
-            };
+            }
             if(get_node_jid(jobid)==NULL){
                 printf("kill: no such job: %s\n", currenttokens[i]);
                 return;
