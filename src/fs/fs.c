@@ -22,9 +22,10 @@ int f_open(const char* pathname, const char* mode) {
         }
     }
     char* name = *(path+length-1);
-    if ((current = get_vnode(current, name)) == NULL){
-
-        return FAILURE;
+    if (get_vnode(current, name) == NULL){
+        if (create_file(current, name)==NULL){
+            return FAILURE;
+        }
     }
     return SUCCESS;
 }
@@ -407,4 +408,157 @@ long long get_block(int n_disk) {
     fwrite(sb, sizeof(sb_t), 1, disk);
 
     return free_block;
+}
+
+static long long get_inode(int n_disk){
+    FILE* disk = disks[n_disk];
+    sb_t* sb = superblocks[n_disk];
+
+    if (sb->free_inode==-1){
+        return FAILURE;
+    }
+
+    long long address = sb->free_inode;
+    fseek(disk,address,SEEK_SET);
+    inode_t* inode = malloc(sizeof(inode_t));
+    fread(inode,sizeof(inode_t),1,disk);
+    sb->free_inode = inode->next_inode;
+
+    fseek(disk, BOOTSIZE, SEEK_SET);
+    fwrite(sb,sizeof(sb_t),1, disk);
+
+    free(inode);
+    return address;
+}
+
+vnode_t* create_file(vnode_t* parent, char* filename){
+    FILE* fs = disks[parent->disk];
+    inode_t* inode = malloc(sizeof(inode_t));
+    fseek(fs, parent->inode,SEEK_SET);
+    fread(inode,sizeof(inode_t),1,fs);
+
+    int end = 0;
+    long long order = (inode->size)/2+1;
+    int index[5];
+    int sum[5];
+    if (order<=(sum[0]=10)){
+        index[0] = 0;
+    }else if(order <=(sum[1]=64+10)){
+        index[0] = 1;
+    }else if(order <= (sum[2]=64^2+64+10)){
+        index[0] = 2;
+    }else if(order <= (sum[3] = 64^3+64^2+64+10)){
+        index[0] = 3;
+    }else if(order <= (sum[4] = 64^4+64^3+64^2+64+10)){
+        index[0] = 4;
+    }else{
+        return NULL;
+    }
+
+    for (int i = 1; i<5; i++){
+        if (index[0]>=i){
+            order = i == 1 ? order - sum[index[0]-1] : order-index[i-1]*64^(index[0]-i+1);
+            index[i] = (order-1)/64^(index[0]-i);
+            if (index[i] < 0){
+                index[i] = 0;
+            }
+            end = index[i]>0 ? i : end;
+        }else{
+            index[i] = 0;
+            if (index[0]==0){
+                index[1] = order;
+            }
+        }
+    }
+
+    long long address;
+    long long newaddress;
+    if (index[0]==0){
+        address = inode->dblocks;
+    }else if (index[0] == 1){
+        if (end == 0 && inode->size % 2 == 0){
+            if ((newaddress = get_block(parent->disk)==FAILURE)){
+                return NULL;
+            }
+            inode->iblock = newaddress;
+            end ++;
+        }
+        address = inode->iblock;
+    }else if (index[0] == 2){
+        if (end == 0 && inode->size % 2 == 0){
+            if ((newaddress = get_block(parent->disk)==FAILURE)){
+                return NULL;
+            }
+            inode->i2block = newaddress;
+            end ++;
+        }
+        address = inode->i2block;
+    }else if (index[0] == 3){
+        if (end == 0 && inode->size % 2 == 0){
+            if ((newaddress = get_block(parent->disk)==FAILURE)){
+                return NULL;
+            }
+            inode->i3block = newaddress;
+            end ++;
+        }
+        address = inode->i3block;
+    }else if (index[0] == 4){
+        if (end == 0 && inode->size % 2 == 0){
+            if ((newaddress = get_block(parent->disk)==FAILURE)){
+                return NULL;
+            }
+            inode->i4block = newaddress;
+            end ++;
+        }
+        address = inode->i4block;
+    }
+
+    if (inode->size % 2 == 0){
+        if (index[0] == 0){
+            if ((newaddress = get_block(parent->disk)==FAILURE)){
+                return NULL;
+            }
+            inode->dblocks[index[1]] = newaddress;
+            fseek(fs, newaddress,SEEK_SET);
+        }else{
+            for (int i = 1; i<end ; i++){
+                fseek(fs, address+sizeof(long long)*index[i],SEEK_SET);
+                fread(&address, sizeof(long long),1,fs);
+            }
+            fseek(fs, address+sizeof(long long)*index[end],SEEK_SET);
+            for (int i = end; i<=index[0]; i++){
+                if ((newaddress = get_block(parent->disk)==FAILURE)){
+                    return NULL;
+                }
+                fwrite(&newaddress, sizeof(long long), 1, fs);
+                fseek(fs, newaddress,SEEK_SET);
+            }
+        }
+    }else{
+        if (index[0] == 0){
+            fseek(fs, inode->dblocks[index[1]]+sizeof(dirent_t),SEEK_SET);
+        }
+        for (int i = 1; i<=index[0] ; i++){
+            fseek(fs, address+sizeof(long long)*index[i],SEEK_SET);
+            fread(&address, sizeof(long long),1,fs);
+        }
+        fseek(fs, address+sizeof(dirent_t),SEEK_SET);
+    }
+
+    dirent_t* entry = malloc(sizeof(dirent_t));
+    if ((entry->inode = get_inode(parent->disk))==FAILURE){
+        return NULL;
+    }
+
+    strcpy(entry->name,filename);
+    entry->type = F;
+
+    fwrite(entry,sizeof(dirent_t),1,fs);
+    fseek(fs,parent->inode,SEEK_SET);
+    fwrite(inode,sizeof(inode_t),1,fs);
+
+    free(inode);
+    free(entry);
+
+    return get_vnode(parent, filename);
 }
