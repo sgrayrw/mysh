@@ -74,17 +74,21 @@ int f_rmdir(const char* pathname) {
 
 int f_mount(const char* source, const char* target) {
     // check target mount point
-    char** tokens;
-    int length = split_path(target, &tokens);
+    char** path;
+    int length = split_path(target, &path);
     vnode_t* parentdir = vnodes;
     for (int i = 0; i < length - 1; ++i) {
-        parentdir = get_vnode(parentdir, tokens[i]);
+        parentdir = get_vnode(parentdir, path[i]);
         if (!parentdir) {
             error = INVALID_PATH;
             return FAILURE;
         }
+        if (parentdir->type != DIR) {
+            error = NOT_DIR;
+            return FAILURE;
+        }
     }
-    if (length > 0 && get_vnode(parentdir, tokens[length - 1])) {
+    if (length > 0 && get_vnode(parentdir, path[length - 1])) {
         error = TARGET_EXISTS;
         return FAILURE;
     }
@@ -117,7 +121,7 @@ int f_mount(const char* source, const char* target) {
         mountpoint->prev = mountpoint;
         vnodes = mountpoint;
     } else {
-        strcpy(mountpoint->name, tokens[length - 1]);
+        strcpy(mountpoint->name, path[length - 1]);
         mountpoint->parent = parentdir;
         mountpoint->children = NULL;
         if (!parentdir->children) {
@@ -133,6 +137,7 @@ int f_mount(const char* source, const char* target) {
     }
     n_disks++;
 
+    free(path);
     return SUCCESS;
 }
 

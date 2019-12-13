@@ -10,6 +10,8 @@
 #define N_DBLOCKS 10
 #define MAX_NAME_LEN (BLOCKSIZE / 2 - sizeof(long long) - 1)
 
+typedef enum {DIR, F} f_type;
+
 typedef struct sb_t {
     int block_size;	// 512
     long long inode_start; // 1024
@@ -23,7 +25,7 @@ typedef struct inode_t {
     long long next_inode; /* position of next free inode */
     int permission;
     long long size; /* number of bytes in file */
-    enum {DIR, F} type;
+    f_type type;
     int uid; /* owner’s user ID */
     int ctime; /* change time */
     int mtime; /* modification time */

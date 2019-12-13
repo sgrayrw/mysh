@@ -7,6 +7,7 @@
 typedef enum {
     // general
     INVALID_PATH = 1,
+    NOT_DIR,
     INVALID_SOURCE,
     TARGET_EXISTS,
 

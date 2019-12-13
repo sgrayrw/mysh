@@ -10,6 +10,7 @@ typedef struct vnode_t {
     long long inode;
     int disk;
     char name[MAX_NAME_LEN + 1];
+    f_type type;
     struct vnode_t* parent;
     struct vnode_t* children;
     struct vnode_t* next;
@@ -50,6 +51,7 @@ static void rm_vnode(vnode_t* vnode);
 static void dump_vnode(vnode_t* vnode, int depth);
 static int split_path(const char* pathname, char*** tokens);
 static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
+static vnode_t* traverse_path(char** path, int length);
 static int readdir(vnode_t* dir, int n, dirent_t* dirent); // n: return the nth dirent
 static long long get_block(int n_disk);
 
