@@ -5,6 +5,7 @@
 #include <termios.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "builtin.h"
 #include "job.h"
@@ -252,19 +253,19 @@ issues to think about:
 
 
 
-void ls_directory(int fd, mode_F, mode_l) {
-    char indicator, **filename;
+void ls_directory(int fd, bool mode_F, bool mode_l) {
+    char indicator, *filename;
     inode_t *inode;
-    while (f_readdir(fd, filename, inode) == SUCCESS) {  //TODO
+    while (f_readdir(fd, &filename, inode) == SUCCESS) {  //TODO
         indicator = 0;
         if (mode_F && inode->type == DIR) {
             indicator = '/';
         }
         if (mode_l) {
             //TODO
-            printf("%s%c\n", *filename, indicator);
+            printf("%s%c\n", filename, indicator);
         } else {
-            printf("%s%c\t", *filename, indicator);
+            printf("%s%c\t", filename, indicator);
             printf("\n");
         }
     }
@@ -274,8 +275,8 @@ void my_ls() {
     bool mode_F = false, mode_l = false, no_arguments = true;
     int index;
     for (index = 1; index < length; index++) {
-        if (currenttokens[index][0] == '_' && strlen(currenttokens[index] > 1)) {
-            for (int i = 1; i < strlen(currenttokens[index]); i++) {
+        if (currenttokens[index][0] == '_' && strlen(currenttokens[index]) > 1) {
+            for (int i = 1; i < (int) strlen(currenttokens[index]); i++) {
                 if (currenttokens[index][i] == 'F') {
                     mode_F = true;
                 } else if (currenttokens[index][i] == 'l') {
@@ -307,7 +308,7 @@ void my_ls() {
         inode_t stats;
         for (index = 1; index < length; index++) {
             path = currenttokens[index];
-            path_length = strlen(path);
+            path_length = (int) strlen(path);
             if (path_length == 1 || path[0] != '_') {
 
                 if (!first_argument) {
