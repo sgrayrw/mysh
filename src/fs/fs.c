@@ -157,6 +157,7 @@ int f_umount(const char* target) {
             return FAILURE;
         }
     }
+    free(path);
     rm_vnode(mountpoint);
     return SUCCESS;
 }

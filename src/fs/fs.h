@@ -23,12 +23,10 @@ typedef struct file_t {
     long long position; // file position indicator
 } file_t;
 
-/*
- * IMPORTANT:
- * all `pathname` should be absolute paths starting with `/`
- * e.g. `/usr/su/`
- */
+extern char* wd;
+
 int f_open(const char* pathname, const char* mode);
+int f_close(int fd);
 ssize_t f_read(int fd, void* buf, size_t count);
 ssize_t f_write(int fd, const void *buf, size_t count);
 int f_seek(int fd, long offset, int whence);
@@ -46,8 +44,7 @@ int f_umount(const char* target);
 void init();
 void term();
 void dump(); // dump vnode tree for debugging
-char* getwd();
-int setwd(const char* pathname);
+int set_wd(const char* pathname);
 
 static void rm_vnode(vnode_t* vnode);
 static void dump_vnode(vnode_t* vnode, int depth);

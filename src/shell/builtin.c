@@ -293,7 +293,7 @@ void my_ls() {
     int fd;
 
     if (no_arguments) {
-        fd = f_opendir(getwd());
+        fd = f_opendir(wd);
         if (fd == FAILURE) {
             fprintf(stderr, "Exception occurred when trying to open the current directory\n");
         }
@@ -342,48 +342,48 @@ void my_ls() {
     }
 }
 
-void chmod() {
+void my_chmod() {
 
 }
 
-void mkdir() {
+void my_mkdir() {
 
 }
 
-void rmdir() {
+void my_rmdir() {
 
 }
 
-void cd() {
+void my_cd() {
     if (length > 2) {
         fprintf(stderr, "cd: too many arguments\n");
     } else if (length == 2){
-        if (f_setdir(currenttokens[1]) == FAILURE) {
+        if (set_wd(currenttokens[1]) == FAILURE) {
             //TODO: error handling
         }
     }
 }
 
-void pwd() {
-    printf("%s", getwd());
+void my_pwd() {
+    printf("%s\n", wd);
 }
 
-void cat() {
-
-}
-
-void more() {
+void my_cat() {
 
 }
 
-void rm() {
+void my_more() {
 
 }
 
-void mount() {
+void my_rm() {
 
 }
 
-void unmount() {
+void my_mount() {
+
+}
+
+void my_unmount() {
 
 }
