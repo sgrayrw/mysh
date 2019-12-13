@@ -36,7 +36,7 @@ void f_rewind(int fd);
 int f_stat(int fd, inode_t* inode);
 int f_remove(int fd);
 int f_opendir(const char* pathname);
-int f_readdir(int fd, dirent_t* dirent);
+int f_readdir(int fd, char** filename, inode_t* inode);
 int f_closedir(int fd);
 int f_mkdir(const char* pathname, const char* mode);
 int f_rmdir(const char* pathname);
@@ -52,7 +52,7 @@ static void dump_vnode(vnode_t* vnode, int depth);
 static int split_path(const char* pathname, char*** tokens);
 static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
 static vnode_t* traverse_path(char** path, int length);
-static int readdir(vnode_t* dir, int n, dirent_t* dirent); // n: return the nth dirent
+static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n: return the nth dirent
 static long long get_block(int n_disk);
 
 #endif
