@@ -46,6 +46,8 @@ int f_umount(const char* target);
 void init();
 void term();
 void dump(); // dump vnode tree for debugging
+char* getwd();
+int setwd(const char* pathname);
 
 static void rm_vnode(vnode_t* vnode);
 static void dump_vnode(vnode_t* vnode, int depth);
@@ -54,8 +56,5 @@ static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
 static vnode_t* traverse_path(char** path, int length);
 static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n: return the nth dirent
 static long long get_block(int n_disk);
-
-char *getwd();
-int setwd(char *pathname);
 
 #endif
