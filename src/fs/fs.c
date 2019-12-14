@@ -7,7 +7,6 @@
 errno error;
 char* wd;
 static vnode_t* vnodes; // root of vnode tree
-static int n_disks;
 static FILE* disks[MAX_DISKS]; // disks mounted
 static sb_t* superblocks[MAX_DISKS]; // superblock for each disk
 static file_t* ft[MAX_OPENFILE]; // open file table
@@ -50,13 +49,22 @@ ssize_t f_read(int fd, void *buf, size_t count) {
 
 }
 
-ssize_t f_write(int fd, const void *buf, size_t count) {
+ssize_t f_write(int fd, const void* buf, size_t count) {
     if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
         error = INVALID_FD;
         return FAILURE;
     }
 
-    // TODO
+    // TODO: seek buf w/ NUL bytes
+
+    long pos = ft[fd]->position;
+
+    // dblocks
+    for (int i = 0; i < N_DBLOCKS && count > 0 && pos > 0; ++i) {
+        if (pos > 0) {}
+    }
+
+
 }
 
 int f_seek(int fd, long offset, int whence) {
@@ -168,24 +176,32 @@ int f_mount(const char* source, const char* target) {
     }
 
     // load disk
-    if (n_disks == MAX_DISKS) {
+    int n_disk = -1;
+    for (int i = 0; i < MAX_DISKS; ++i) {
+        if (!disks[i]) {
+            n_disk = i;
+            break;
+        }
+    }
+    if (n_disk == -1) {
         error = DISKS_EXCEEDED;
         return FAILURE;
     }
+
     FILE* disk = fopen(source, "r");
     if (!disk) {
         error = INVALID_SOURCE;
         return FAILURE;
     }
-    disks[n_disks] = disk;
+    disks[n_disk] = disk;
     sb_t* sb = malloc(sizeof(sb_t));
     fread(sb, sizeof(sb_t), 1, disk);
-    superblocks[n_disks] = sb;
+    superblocks[n_disk] = sb;
 
     // add vnode corresponding to the mount point
     vnode_t* mountpoint = malloc(sizeof(vnode_t));
     mountpoint->inode = sb->root_inode;
-    mountpoint->disk = n_disks;
+    mountpoint->disk = n_disk;
     if (length == 0) {
         // mount at `/` (for the first disk)
         strcpy(mountpoint->name, "/");
@@ -209,7 +225,6 @@ int f_mount(const char* source, const char* target) {
             mountpoint->prev->next = mountpoint;
         }
     }
-    n_disks++;
 
     free_path(path);
     return SUCCESS;
@@ -238,7 +253,6 @@ int f_umount(const char* target) {
 
 void init() {
     vnodes = NULL;
-    n_disks = 0;
     for (int i = 0; i < MAX_DISKS; ++i) {
         disks[i] = NULL;
         superblocks[i] = NULL;
@@ -248,9 +262,11 @@ void init() {
 
 void term() {
     rm_vnode(vnodes);
-    for (int i = 0; i < n_disks; ++i) {
-        fclose(disks[i]);
-        free(superblocks[i]);
+    for (int i = 0; i < MAX_DISKS; ++i) {
+        if (disks[i]){
+            fclose(disks[i]);
+            free(superblocks[i]);
+        }
     }
     free(wd);
 }
@@ -324,7 +340,7 @@ int split_path(const char* pathname, char*** tokens) {
 }
 
 static void free_path(char** path) {
-    
+
 }
 
 vnode_t* get_vnode(vnode_t* parentdir, char* filename) {

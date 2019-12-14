@@ -29,7 +29,7 @@ extern char* wd;
 int f_open(const char* pathname, const char* mode);
 int f_close(int fd);
 ssize_t f_read(int fd, void* buf, size_t count);
-ssize_t f_write(int fd, const void *buf, size_t count);
+ssize_t f_write(int fd, const void* buf, size_t count);
 int f_seek(int fd, long offset, int whence);
 int f_rewind(int fd);
 int f_stat(int fd, inode_t* inode);
