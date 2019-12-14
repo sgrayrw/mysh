@@ -272,7 +272,6 @@ void term() {
 }
 
 void rm_vnode(vnode_t* vnode) {
-    // TODO: cleanup tree
     char rootname[] = "/";
     if (strcmp(vnode->name,rootname)==0){
         disks[vnode->disk] = NULL;
@@ -398,6 +397,7 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
         newchild->inode = dirent.inode;
         newchild->disk = parentdir->disk;
         strcpy(newchild->name, dirent.name);
+        newchild->type = inode.type;
         newchild->parent = parentdir;
         newchild->children = NULL;
         newchild->cur_entry = 0;
@@ -421,28 +421,29 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
 }
 
 int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
+    inode_t* parent_inode;
     FILE* disk = disks[dir->disk];
     fseek(disk, dir->inode, SEEK_SET);
-    fread(inode, sizeof(inode_t), 1, disk);
+    fread(&parent_inode, sizeof(inode_t), 1, disk);
 
-    if (n > inode->size)
+    if (n > parent_inode->size)
         return FAILURE;
 
     long long block = 0;
     // dblocks
     for (int i = 0; i < N_DBLOCKS && n >= 0; ++i) {
-        block = inode->dblocks[i];
+        block = parent_inode->dblocks[i];
         n -= 2; // two dirents in a block
     }
     // iblock
-    fseek(disk, inode->iblock, SEEK_SET);
-    while (ftell(disk) - inode->iblock < BLOCKSIZE && n >= 0) {
+    fseek(disk, parent_inode->iblock, SEEK_SET);
+    while (ftell(disk) - parent_inode->iblock < BLOCKSIZE && n >= 0) {
         fread(&block, sizeof(long long), 1, disk);
         n -= 2;
     }
     // i2block
-    fseek(disk, inode->i2block, SEEK_SET);
-    while (ftell(disk) - inode->i2block < BLOCKSIZE && n >= 0) {
+    fseek(disk, parent_inode->i2block, SEEK_SET);
+    while (ftell(disk) - parent_inode->i2block < BLOCKSIZE && n >= 0) {
         long long iblock;
         fread(&iblock, sizeof(long long), 1, disk);
         long loop1 = ftell(disk);
@@ -455,8 +456,8 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
         fseek(disk, loop1, SEEK_SET);
     }
     // i3block
-    fseek(disk, inode->i3block, SEEK_SET);
-    while (ftell(disk) - inode->i3block < BLOCKSIZE && n >= 0) {
+    fseek(disk, parent_inode->i3block, SEEK_SET);
+    while (ftell(disk) - parent_inode->i3block < BLOCKSIZE && n >= 0) {
         long long i2block;
         fread(&i2block, sizeof(long long), 1, disk);
         long loop2 = ftell(disk);
@@ -477,8 +478,8 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
         fseek(disk, loop2, SEEK_SET);
     }
     // i4block
-    fseek(disk, inode->i4block, SEEK_SET);
-    while (ftell(disk) - inode->i4block < BLOCKSIZE && n >= 0) {
+    fseek(disk, parent_inode->i4block, SEEK_SET);
+    while (ftell(disk) - parent_inode->i4block < BLOCKSIZE && n >= 0) {
         long long i3block;
         fread(&i3block, sizeof(long long), 1, disk);
         long loop3 = ftell(disk);
@@ -515,6 +516,8 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
         fseek(disk, block + (long long) sizeof(dirent_t), SEEK_SET);
 
     fread(dirent, sizeof(dirent_t), 1, disk);
+    fseek(disk, dirent->inode, SEEK_SET);
+    fread(inode, sizeof(inode_t), 1, disk);
     return SUCCESS;
 }
 
