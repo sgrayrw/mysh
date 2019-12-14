@@ -5,6 +5,7 @@
 #include "disk.h"
 
 #define MAX_DISKS 16
+#define MAX_OPENFILE 256
 
 typedef struct vnode_t {
     long long inode;
@@ -19,11 +20,12 @@ typedef struct vnode_t {
 } vnode_t;
 
 typedef struct file_t {
-    vnode_t vnode;
+    vnode_t* vnode;
     long long position; // file position indicator
 } file_t;
 
 extern char* wd;
+extern file_t* ft[MAX_OPENFILE];
 
 int f_open(const char* pathname, const char* mode);
 int f_close(int fd);
@@ -55,4 +57,6 @@ static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n:
 vnode_t* create_file(vnode_t* parent, char* filename);
 static long long get_block(int n_disk);
 static long long get_inode(int n_disk);
+static void free_block(int n_disk, long long address);
+static void free_inode(int n_disk, long long address);
 #endif

@@ -10,7 +10,7 @@
 #define N_DBLOCKS 10
 #define MAX_NAME_LEN (BLOCKSIZE / 2 - sizeof(long long) - 1)
 
-typedef enum {DIR, F} f_type;
+typedef enum {DIR, F, EMPTY} f_type;
 
 typedef struct sb_t {
     int block_size;	// 512

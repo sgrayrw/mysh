@@ -31,10 +31,14 @@ int f_open(const char* pathname, const char* mode) {
 }
 
 int f_close(int fd) {
-
+    if (ft[fd]==NULL){
+        return FAILURE;
+    }
+    ft[fd] = NULL;
 }
 
 ssize_t f_read(int fd, void *buf, size_t count) {
+    vnode_t* vnode = ft[fd]->vnode;
 
 }
 
@@ -43,11 +47,29 @@ ssize_t f_write(int fd, const void *buf, size_t count) {
 }
 
 int f_seek(int fd, long offset, int whence) {
+    if (ft[fd] == NULL){
+        return FAILURE;
+    }
 
+    file_t* file = ft[fd];
+    if (whence  == SEEK_SET){
+        file->position = offset;
+    }else if (whence == SEEK_CUR){
+        file->position += offset;
+    }else if (whence == SEEK_END){
+        long long address = file->vnode->inode;
+        FILE* disk = disks[file->vnode->disk];
+        fseek(disk,address,SEEK_SET);
+        inode_t* inode = malloc(sizeof(inode_t));
+        fread(inode,sizeof(inode_t),1,disk);
+        file->position = inode->size+offset;
+        free(inode);
+    }
+    return SUCCESS;
 }
 
 void f_rewind(int fd) {
-
+    f_seek(fd, 0, SEEK_SET);
 }
 
 int f_stat(int fd, inode_t* inode) {
@@ -55,6 +77,27 @@ int f_stat(int fd, inode_t* inode) {
 }
 
 int f_remove(int fd) {
+    file_t* file  = ft[fd];
+    vnode_t* vnode = file->vnode;
+    FILE* disk = disks[vnode->disk];
+    inode_t* inode = malloc(sizeof(inode_t));
+    fseek(disk,vnode->inode,SEEK_SET);
+    fread(inode,sizeof(inode_t),1,disk);
+    if (inode->type == DIR){
+        return FAILURE;
+    }
+    //free blocks
+
+    //free inode
+    free_inode(vnode->disk,vnode->inode);
+    //free parent entry
+    vnode_t* parent = vnode->parent;
+    dirent_t* entry = malloc(sizeof(dirent_t));
+    inode_t* new;
+    int count = 0;
+    while(readdir(parent,count,entry,inode)){
+
+    }
 
 }
 
@@ -561,4 +604,32 @@ vnode_t* create_file(vnode_t* parent, char* filename){
     free(entry);
 
     return get_vnode(parent, filename);
+}
+
+void free_block(int n_disk, long long address){
+    FILE* disk = disks[n_disk];
+    sb_t* sb = superblocks[n_disk];
+
+
+    fseek(disk,address,SEEK_SET);
+    fwrite(&(sb->free_block),sizeof(long long),1,disk);
+    sb->free_block = address;
+    fseek(disk,BOOTSIZE,SEEK_SET);
+    fwrite(sb,sizeof(sb_t),1,disk);
+}
+
+void free_inode(int n_disk, long long address){
+    FILE* disk = disks[n_disk];
+    sb_t* sb = superblocks[n_disk];
+
+
+    fseek(disk,address,SEEK_SET);
+    inode_t* inode = malloc(sizeof(inode_t));
+    fread(inode,sizeof(inode_t),1,disk);
+    inode->size = 0;
+    inode->next_inode = sb->free_inode;
+    fwrite(inode,sizeof(inode_t),1,disk);
+    sb->free_inode = address;
+    fseek(disk,BOOTSIZE,SEEK_SET);
+    fwrite(sb,sizeof(sb_t),1,disk);
 }
