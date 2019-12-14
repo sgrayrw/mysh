@@ -25,7 +25,6 @@ typedef struct file_t {
 } file_t;
 
 extern char* wd;
-extern file_t* ft[MAX_OPENFILE];
 
 int f_open(const char* pathname, const char* mode);
 int f_close(int fd);
@@ -51,6 +50,7 @@ int set_wd(const char* pathname);
 static void rm_vnode(vnode_t* vnode);
 static void dump_vnode(vnode_t* vnode, int depth);
 static int split_path(const char* pathname, char*** tokens);
+static int free_path(char** path);
 static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
 static vnode_t* traverse_path(char** path, int length);
 static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n: return the nth dirent

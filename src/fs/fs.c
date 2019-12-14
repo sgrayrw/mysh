@@ -10,6 +10,7 @@ static vnode_t* vnodes; // root of vnode tree
 static int n_disks;
 static FILE* disks[MAX_DISKS]; // disks mounted
 static sb_t* superblocks[MAX_DISKS]; // superblock for each disk
+static file_t* ft[MAX_OPENFILE]; // open file table
 
 int f_open(const char* pathname, const char* mode) {
     char** path;
@@ -186,9 +187,7 @@ int f_mount(const char* source, const char* target) {
     }
     n_disks++;
 
-//    for (int i = 0; i < length; ++i)
-//        free(path[i]);
-//    free(path);
+    free_path(path);
     return SUCCESS;
 }
 
@@ -208,7 +207,7 @@ int f_umount(const char* target) {
             return FAILURE;
         }
     }
-    free(path);
+    free_path(path);
     rm_vnode(mountpoint);
     return SUCCESS;
 }
@@ -255,7 +254,27 @@ void dump_vnode(vnode_t* vnode, int depth) {
 }
 
 int set_wd(const char* pathname) {
+    // check target mount point
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* dest = vnodes;
+    for (int i = 0; i < length; ++i) {
+        dest = get_vnode(dest, path[i]);
+        if (!dest) {
+            error = INVALID_PATH;
+            return FAILURE;
+        }
+        if (dest->type != DIR) {
+            error = NOT_DIR;
+            return FAILURE;
+        }
+    }
+    free_path(path);
 
+    if (!wd || strlen(wd) < strlen(dest->name))
+        wd = realloc(wd, strlen(dest->name) + 1);
+    strcpy(wd, dest->name);
+    return SUCCESS;
 }
 
 int split_path(const char* pathname, char*** tokens) {
@@ -610,7 +629,6 @@ void free_block(int n_disk, long long address){
     FILE* disk = disks[n_disk];
     sb_t* sb = superblocks[n_disk];
 
-
     fseek(disk,address,SEEK_SET);
     fwrite(&(sb->free_block),sizeof(long long),1,disk);
     sb->free_block = address;
@@ -621,7 +639,6 @@ void free_block(int n_disk, long long address){
 void free_inode(int n_disk, long long address){
     FILE* disk = disks[n_disk];
     sb_t* sb = superblocks[n_disk];
-
 
     fseek(disk,address,SEEK_SET);
     inode_t* inode = malloc(sizeof(inode_t));
