@@ -273,6 +273,29 @@ void term() {
 
 void rm_vnode(vnode_t* vnode) {
     // TODO: cleanup tree
+    char rootname[] = "/";
+    if (strcmp(vnode->name,rootname)==0){
+        disks[vnode->disk] = NULL;
+        superblocks[vnode->disk] = NULL;
+    }
+
+    while (vnode->children != NULL){
+        rm_vnode(vnode->children);
+    }
+
+    if (vnode->parent == NULL){
+        free(vnode);
+        return;
+    }
+
+    if (vnode->next == vnode){
+        vnode->parent->children = NULL;
+    }else{
+        vnode->parent->children = vnode->next;
+        vnode->next->prev = vnode->prev;
+        vnode->prev->next = vnode->next;
+    }
+    free(vnode);
 }
 
 void dump() {
