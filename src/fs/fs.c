@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include "error.h"
 #include "fs.h"
 
@@ -28,8 +29,10 @@ int f_open(const char* pathname, const char* mode) {
     }
 
     vnode_t* vnode = get_vnode(parentdir, path[length - 1]);
-    inode_t inode;
-    vnode_to_inode(vnode, &inode);
+    if (vnode && vnode->type == DIR) {
+        error = NOT_FILE;
+        return FAILURE;
+    }
 
     long position;
     f_mode fmode;
@@ -47,6 +50,14 @@ int f_open(const char* pathname, const char* mode) {
                 error = DISK_FULL;
                 return FAILURE;
             }
+            inode_t inode;
+            vnode_to_inode(vnode, &inode);
+            inode.uid = user;
+            // default permission
+            inode.permission[0] = 'r';
+            inode.permission[1] = 'w';
+            inode.permission[2] = inode.permission[3] = '-';
+            update_inode(vnode, &inode);
         } else if (mode[0] == 'w') {
             // with "w" mode, if file already exists, truncate file
         }
@@ -76,9 +87,6 @@ int f_open(const char* pathname, const char* mode) {
         error = FT_EXCEEDED;
         return FAILURE;
     }
-
-    // update attributes
-    inode.
 
     free_path(path);
     return fd;
@@ -196,7 +204,41 @@ int f_remove(int fd) {
 }
 
 int f_opendir(const char* pathname) {
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* dir_vnode = vnodes;
+    for (int i = 0; i < length; i++){
+        dir_vnode = get_vnode(dir_vnode, path[i]);
+        if (!dir_vnode) {
+            error = INVALID_PATH;
+            return FAILURE;
+        }
+        if (dir_vnode->type != DIR) {
+            error = NOT_DIR;
+            return FAILURE;
+        }
+    }
 
+    // add to open file table
+    file_t* dir = malloc(sizeof(file_t));
+    dir->position = 0;
+    dir->vnode = dir_vnode;
+    dir->mode = RDWR;
+    int fd = -1;
+    for (int i = 0; i < MAX_OPENFILE; ++i) {
+        if (!ft[i]) {
+            ft[i] = dir;
+            fd = i;
+            break;
+        }
+    }
+    if (fd == -1) {
+        error = FT_EXCEEDED;
+        return FAILURE;
+    }
+
+    free_path(path);
+    return fd;
 }
 
 int f_readdir(int fd, char** filename, inode_t* inode) {

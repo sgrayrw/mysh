@@ -9,6 +9,7 @@
 #define N_INODES 128 /* max 128 inodes */
 #define N_DBLOCKS 10
 #define MAX_NAME_LEN (BLOCKSIZE / 2 - sizeof(long long) - 1)
+#define LEN_PERMISSION 4
 
 typedef enum {DIR, F, EMPTY} f_type;
 
@@ -23,13 +24,11 @@ typedef struct sb_t {
 
 typedef struct inode_t {
     long long next_inode; /* position of next free inode */
-    int permission;
+    char permission[LEN_PERMISSION];
     long long size; /* number of bytes in file */
     f_type type;
     int uid; /* owner’s user ID */
-    int ctime; /* change time */
-    int mtime; /* modification time */
-    int atime; /* access time */
+    time_t mtime; /* modification time */
     long long dblocks[N_DBLOCKS];
     long long iblock;
     long long i2block;

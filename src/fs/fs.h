@@ -19,7 +19,7 @@ typedef struct vnode_t {
     int cur_entry; // next entry to return for f_readdir
 } vnode_t;
 
-typedef enum {RDONLY, WRONLY} f_mode;
+typedef enum {RDONLY, WRONLY, RDWR} f_mode;
 
 typedef struct file_t {
     vnode_t* vnode;
