@@ -96,8 +96,10 @@ int f_remove(int fd) {
     dirent_t* entry = malloc(sizeof(dirent_t));
     inode_t* new;
     int count = 0;
-    while(readdir(parent,count,entry,inode)){
+    while(readdir(parent,count,entry,inode) == SUCCESS){
+        if (strcmp(entry->name,vnode->name)==0){
 
+        }
     }
 
 }
@@ -535,9 +537,7 @@ vnode_t* create_file(vnode_t* parent, char* filename){
 
     long long address;
     long long newaddress;
-    if (index[0]==0){
-        address = inode->dblocks;
-    }else if (index[0] == 1){
+    if (index[0] == 1){
         if (end == 0 && inode->size % 2 == 0){
             if ((newaddress = get_block(parent->disk)==FAILURE)){
                 return NULL;
@@ -599,12 +599,13 @@ vnode_t* create_file(vnode_t* parent, char* filename){
     }else{
         if (index[0] == 0){
             fseek(fs, inode->dblocks[index[1]]+sizeof(dirent_t),SEEK_SET);
+        }else{
+            for (int i = 1; i<=index[0] ; i++){
+                fseek(fs, address+sizeof(long long)*index[i],SEEK_SET);
+                fread(&address, sizeof(long long),1,fs);
+            }
+            fseek(fs, address+sizeof(dirent_t),SEEK_SET);
         }
-        for (int i = 1; i<=index[0] ; i++){
-            fseek(fs, address+sizeof(long long)*index[i],SEEK_SET);
-            fread(&address, sizeof(long long),1,fs);
-        }
-        fseek(fs, address+sizeof(dirent_t),SEEK_SET);
     }
 
     dirent_t* entry = malloc(sizeof(dirent_t));
