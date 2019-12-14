@@ -13,6 +13,8 @@
 #include "../fs/fs.h"
 #include "../fs/error.h"
 
+#define BUFSIZE 512
+
 struct Node* lastnode;
 char** currenttokens;
 int length;
@@ -44,6 +46,33 @@ int builtin(char** neededtokens, int argclength){
             return true;
         } else if (strcmp(currenttokens[0],"ls")==0) {
             my_ls();
+            return true;
+        } else if (strcmp(currenttokens[0],"cd")==0) {
+            my_cd();
+            return true;
+        } else if (strcmp(currenttokens[0],"rm")==0) {
+            my_rm();
+            return true;
+        } else if (strcmp(currenttokens[0],"cat")==0) {
+            my_cat();
+            return true;
+        } else if (strcmp(currenttokens[0],"pwd")==0) {
+            my_pwd();
+            return true;
+        } else if (strcmp(currenttokens[0],"more")==0) {
+            my_more();
+            return true;
+        } else if (strcmp(currenttokens[0],"mkdir")==0) {
+            my_mkdir();
+            return true;
+        } else if (strcmp(currenttokens[0],"chmod")==0) {
+            my_chmod();
+            return true;
+        } else if (strcmp(currenttokens[0],"rmdir")==0) {
+            my_rmdir();
+            return true;
+        } else if (strcmp(currenttokens[0],"umount")==0) {
+            my_umount();
             return true;
         }
     }
@@ -249,11 +278,25 @@ int getlastnode_sus(){
 
 /****************************
 
-hw7
+hw7 built-ins
+
+currently being written by Jiyu
+
+note to group:
+    1. mount table and n_disks
+    2. relative path for mount
+    3. change built-in logic (fork)
+    4. file table stdin stdout stderr reserved
+    5. permission:
+        ownership: user and others (2 digits, one for user and one for others)
+        permission: for each ownership, permission is a 2-bit binary sequence (rw), equivalent to an integer ranging from 0 - 3
+                    for example, 1110 is read only for others and read and write for the owner
+    6. time
+
 
 issues to think about:
-    1. permission
     2. redirection
+    3. cat and more
 
 ****************************/
 
@@ -261,19 +304,22 @@ issues to think about:
 
 void ls_directory(int fd, bool mode_F, bool mode_l) {
     char indicator, *filename;
-    inode_t inode;
-    while (f_readdir(fd, &filename, &inode) == SUCCESS) {  //TODO
+    inode_t stats;
+    bool need_to_append_newline = false;
+    while (f_readdir(fd, &filename, &stats) == SUCCESS) {
         indicator = 0;
-        if (mode_F && inode.type == DIR) {
+        if (mode_F && stats.type == DIR) {
             indicator = '/';
         }
         if (mode_l) {
-            //TODO
-            printf("%s%c\n", filename, indicator);
+            printf("%lld%s%c\n", stats.size, filename, indicator);  //TODO long list form
         } else {
             printf("%s%c\t", filename, indicator);
-            printf("\n");
+            need_to_append_newline = true;
         }
+    }
+    if (need_to_append_newline) {
+        printf("\n");
     }
 }
 
@@ -301,21 +347,14 @@ void my_ls() {
 
     if (no_arguments) {
         fd = f_opendir(wd);
-        if (fd == FAILURE) {
-            fprintf(stderr, "Exception occurred when trying to open the current directory\n");
-        }
         ls_directory(fd, mode_F, mode_l);
         f_closedir(fd);
 
     } else {
         bool first_argument = true;
-        char *path;
-        int path_length;
         inode_t stats;
         for (index = 1; index < length; index++) {
-            path = currenttokens[index];
-            path_length = (int) strlen(path);
-            if (path_length == 1 || path[0] != '_') {
+            if (strlen(currenttokens[index]) == 1 || currenttokens[index][0] != '_') {
 
                 if (!first_argument) {
                     printf("\n");
@@ -324,14 +363,14 @@ void my_ls() {
                 fd = f_opendir(currenttokens[index]);
 
                 if (fd == FAILURE) {
-                    fd = f_open(currenttokens[index], "r");
+                    fd = f_open(currenttokens[index], "r"); //TODO mode flag
                     if (fd == FAILURE) {
                         //TODO error handling
                     } else {
+                        printf("%s:\n", currenttokens[index]);
                         if (mode_l) {
                             f_stat(fd, &stats);
-                            //TODO long list format
-                            printf("%lld%s\n", stats.size, currenttokens[index]);
+                            printf("%lld%s\n", stats.size, currenttokens[index]); //TODO long list format
                         } else {
                             printf("%s\n", currenttokens[index]);
                         }
@@ -339,6 +378,7 @@ void my_ls() {
                     }
 
                 } else {
+                    printf("%s:\n", currenttokens[index]);
                     ls_directory(fd, mode_F, mode_l);
                     f_closedir(fd);
                 }
@@ -350,15 +390,38 @@ void my_ls() {
 }
 
 void my_chmod() {
-
+    if (length < 3) {
+        fprintf(stderr, "usage: chmod <permissions> <file>...\n");
+    } else {
+        int fd;
+        for (int i = 2; i < length; i++) {
+            //TODO chmod implementation
+        }
+    }
 }
 
 void my_mkdir() {
-
+    if (length == 1) {
+        fprintf(stderr, "usage: mkdir <directory>...\n");
+    } else {
+        for (int i = 1; i < length; i++) {
+            if (f_mkdir(currenttokens[i]) == FAILURE) {
+                //TODO error handling
+            }
+        }
+    }
 }
 
 void my_rmdir() {
-
+    if (length == 1) {
+        fprintf(stderr, "usage: rmdir <directory>...\n");
+    } else {
+        for (int i = 1; i < length; i++) {
+            if (f_rmdir(currenttokens[i]) == FAILURE) {
+                //TODO error handling
+            }
+        }
+    }
 }
 
 void my_cd() {
@@ -375,26 +438,123 @@ void my_pwd() {
     printf("%s\n", wd);
 }
 
-void my_cat() {
-
-}
-
-void my_more() {
-
-}
-
-void my_rm() {
-
-}
-
-void my_mount() {
-    if (length != 3) {
-        fprintf(stderr, "error code to be written\n"); //TODO
-    } else {
-        f_mount(currenttokens[1], currenttokens[2]);  //TODO
+void cat_helper(int fd) {
+    char buffer[BUFSIZE];
+    ssize_t n;
+    while ((n = f_read(fd, buffer, BUFSIZE)) > 0) {
+        fwrite(buffer, n, 1, stdout);
     }
 }
 
-void my_unmount() {
+void my_cat() {
+    int fd = STDIN_FILENO;
+    if (length == 1) {
+        cat_helper(fd);
+    } else {
+        for (int i = 1; i < length; i++) {
+            fd = f_open(currenttokens[i], "r"); //TODO mode flag
+            if (fd == FAILURE) {
+                //TODO error handling
+            } else {
+                cat_helper(fd);
+                f_close(fd);
+            }
+        }
+    }
+}
 
+void my_more() {
+    if (length == 1) {
+        fprintf("usage: more <file>...\n");
+    } else {
+        int fd, n;
+        long long count;
+        char buffer[BUFSIZE];
+        inode_t stats;
+        char *line = NULL;
+        size_t t = 0;
+
+        for (int i = 1; i < length; i++) {
+            fd = f_open(currenttokens[i], "r"); //TODO mode flag
+            if (fd == FAILURE) {
+                //TODO error handling
+            } else {
+                f_stat(fd, &stats);
+                count = 0;
+                while (count < stats.size) {
+                    n = f_read(fd, buffer, BUFSIZE);
+                    count += n;
+                    fwrite(buffer, n, 1, stdout);
+                    if (count < stats.size) {
+                        printf("\n -- Press Enter for the next page (type q to quit): ");
+                        getline(&line, &t, stdin);
+                        if (strcmp(line, "q\n") == 0) {
+                            if (line) free(line);
+                            return;
+                        }
+                    }
+                }
+                if (i < length - 1) {
+                    printf("\n -- Press Enter for the next file (type q to quit): ");
+                    getline(&line, &t, stdin);
+                    if (strcmp(line, "q\n") == 0) {
+                        if (line) free(line);
+                        return;
+                    }
+                }
+            }
+        }
+        if (line) free(line);
+    }
+}
+
+void my_rm() {
+    if (length == 1) {
+        fprintf(stderr, "usage: rm <file>...\n");
+    } else {
+        for (int i = 1; i < length; i++) {
+            if (f_remove(currenttokens[i]) == FAILURE) {
+                //TODO error handling
+            }
+        }
+    }
+}
+
+void my_mount() {
+    if (length == 1) {
+        //TODO
+    } else if (length == 3) {
+        if (f_mount(currenttokens[1], currenttokens[2]) == FAILURE) {
+            switch (error) {
+                case INVALID_PATH:
+                    fprintf(stderr, "mount: %s: invalid path\n", currenttokens[2]);
+                    break;
+                case NOT_DIR:
+                    fprintf(stderr, "mount: %s: not a directory\n", currenttokens[2]);
+                    break;
+                case TARGET_EXISTS:
+                    fprintf(stderr, "mount: %s: target already exists\n", currenttokens[2]);
+                    break;
+                case DISKS_EXCEEDED:
+                    fprintf(stderr, "mount: already reached the maximum number of disk mounts\n", currenttokens[2]);
+                    break;
+                case INVALID_SOURCE:
+                    fprintf(stderr, "mount: invalid disk\n");
+            }
+        }
+    } else {
+        fprintf(stderr, "usage: mount <source> <target>\n");
+    }
+}
+
+void my_umount() {
+    if (length == 1) {
+        fprintf(stderr, "usage: umount <target>...\n");
+    } else {
+        for (int i = 1; i < length; i++) {
+            if (f_umount(currenttokens[i]) == FAILURE) {
+                //TODO error handling
+            }
+        }
+    }
 }

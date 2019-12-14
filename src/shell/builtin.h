@@ -12,5 +12,14 @@ void my_fg(); // put a specific job to the foreground
 void my_bg(); // continue a specific job in the background
 void my_mount();
 void my_ls();
+void my_cd();
+void my_rm();
+void my_cat();
+void my_pwd();
+void my_more();
+void my_mkdir();
+void my_chmod();
+void my_rmdir();
+void my_umount();
 
 #endif
