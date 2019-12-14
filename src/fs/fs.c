@@ -14,20 +14,74 @@ static file_t* ft[MAX_OPENFILE]; // open file table
 int f_open(const char* pathname, const char* mode) {
     char** path;
     int length = split_path(pathname, &path);
-    vnode_t* current = vnodes;
-    for (int i = 0; i < length-1; i++){
-        char* name = *(path+i);
-        if ((current = get_vnode(current, name)) == NULL){
+    vnode_t* parentdir = vnodes;
+    for (int i = 0; i < length - 1; i++){
+        parentdir = get_vnode(parentdir, path[i]);
+        if (!parentdir) {
+            error = INVALID_PATH;
+            return FAILURE;
+        }
+        if (parentdir->type != DIR) {
+            error = NOT_DIR;
             return FAILURE;
         }
     }
-    char* name = *(path+length-1);
-    if (get_vnode(current, name) == NULL){
-        if (create_file(current, name)==NULL){
+
+    vnode_t* vnode = get_vnode(parentdir, path[length - 1]);
+    inode_t inode;
+    vnode_to_inode(vnode, &inode);
+
+    long position;
+    f_mode fmode;
+    if (mode[0] == 'r') {
+        if (!vnode) {
+            error = INVALID_PATH;
             return FAILURE;
         }
+        position = 0;
+        fmode = RDONLY;
+    } else {
+        if (!vnode) {
+            vnode = create_file(parentdir, path[length - 1]);
+            if (!vnode) {
+                error = DISK_FULL;
+                return FAILURE;
+            }
+        } else if (mode[0] == 'w') {
+            // with "w" mode, if file already exists, truncate file
+        }
+
+        if (mode[0] == 'w')
+            position = 0;
+        else // mode "a"
+            position = inode.size;
+
+        fmode = WRONLY;
     }
-    return SUCCESS;
+
+    // add to open file table
+    file_t* file = malloc(sizeof(file_t));
+    file->position = position;
+    file->vnode = vnode;
+    file->mode = fmode;
+    int fd = -1;
+    for (int i = 0; i < MAX_OPENFILE; ++i) {
+        if (!ft[i]) {
+            ft[i] = file;
+            fd = i;
+            break;
+        }
+    }
+    if (fd == -1) {
+        error = FT_EXCEEDED;
+        return FAILURE;
+    }
+
+    // update attributes
+    inode.
+
+    free_path(path);
+    return fd;
 }
 
 int f_close(int fd) {
@@ -52,19 +106,30 @@ ssize_t f_read(int fd, void* buf, size_t count) {
         error = F_EOF;
         return FAILURE;
     }
-    
+
 
 }
 
-ssize_t f_write(int fd, const void* buf, size_t count) {
+ssize_t f_write(int fd, void* buf, size_t count) {
     if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
         error = INVALID_FD;
         return FAILURE;
     }
 
-    // TODO: seek buf w/ NUL bytes
-
-    long pos = ft[fd]->position;
+    file_t* file = ft[fd];
+    inode_t inode;
+    vnode_to_inode(file->vnode, &inode);
+    size_t padding = file->position - inode.size;
+    if (padding > 0) {
+        // fill in NUL bytes
+        void* tmp = malloc(count);
+        memcpy(tmp, buf, count);
+        buf = realloc(buf, padding + count);
+        memset(buf, '\0', padding);
+        memcpy(buf + padding, tmp, count);
+        file->position = inode.size;
+        count += padding;
+    }
 
 
 }
@@ -184,7 +249,7 @@ int f_mount(const char* source, const char* target) {
         return FAILURE;
     }
 
-    FILE* disk = fopen(source, "r");
+    FILE* disk = fopen(source, "r+");
     if (!disk) {
         error = INVALID_SOURCE;
         return FAILURE;
@@ -420,6 +485,12 @@ void vnode_to_inode(vnode_t* vnode, inode_t* inode) {
     FILE* disk = disks[vnode->disk];
     fseek(disk, vnode->inode, SEEK_SET);
     fread(inode, sizeof(inode_t), 1, disk);
+}
+
+void update_inode(vnode_t* vnode, inode_t* inode) {
+    FILE* disk = disks[vnode->disk];
+    fseek(disk, vnode->inode, SEEK_SET);
+    fwrite(inode, sizeof(inode_t), 1, disk);
 }
 
 int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {

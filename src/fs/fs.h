@@ -19,9 +19,12 @@ typedef struct vnode_t {
     int cur_entry; // next entry to return for f_readdir
 } vnode_t;
 
+typedef enum {RDONLY, WRONLY} f_mode;
+
 typedef struct file_t {
     vnode_t* vnode;
     long long position; // file position indicator
+    f_mode mode;
 } file_t;
 
 extern char* wd;
@@ -29,7 +32,7 @@ extern char* wd;
 int f_open(const char* pathname, const char* mode);
 int f_close(int fd);
 ssize_t f_read(int fd, void* buf, size_t count);
-ssize_t f_write(int fd, const void* buf, size_t count);
+ssize_t f_write(int fd, void* buf, size_t count);
 int f_seek(int fd, long offset, int whence);
 int f_rewind(int fd);
 int f_stat(int fd, inode_t* inode);
@@ -53,6 +56,7 @@ static int split_path(const char* pathname, char*** tokens);
 static void free_path(char** path);
 static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
 static void vnode_to_inode(vnode_t* vnode, inode_t* inode);
+static void update_inode(vnode_t* vnode, inode_t* inode);
 static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n: return the nth dirent
 static vnode_t* create_file(vnode_t* parent, char* filename);
 static long long get_block(int n_disk);
