@@ -11,4 +11,9 @@ void eval(); // evaluate tokens and call builtin/exec
 void launch_process(bool);
 void free_tokens();
 
+// hw7 functions
+void login();
+
+extern int user_id;
+
 #endif
