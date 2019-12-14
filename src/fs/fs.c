@@ -32,23 +32,36 @@ int f_open(const char* pathname, const char* mode) {
 }
 
 int f_close(int fd) {
-    if (ft[fd]==NULL){
+    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd]==NULL) {
+        error = INVALID_FD;
         return FAILURE;
     }
     ft[fd] = NULL;
+    return SUCCESS;
 }
 
 ssize_t f_read(int fd, void *buf, size_t count) {
+    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
+        error = INVALID_FD;
+        return FAILURE;
+    }
+
     vnode_t* vnode = ft[fd]->vnode;
 
 }
 
 ssize_t f_write(int fd, const void *buf, size_t count) {
+    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
+        error = INVALID_FD;
+        return FAILURE;
+    }
 
+    // TODO
 }
 
 int f_seek(int fd, long offset, int whence) {
-    if (ft[fd] == NULL){
+    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
+        error = INVALID_FD;
         return FAILURE;
     }
 
@@ -69,12 +82,21 @@ int f_seek(int fd, long offset, int whence) {
     return SUCCESS;
 }
 
-void f_rewind(int fd) {
-    f_seek(fd, 0, SEEK_SET);
+int f_rewind(int fd) {
+    return f_seek(fd, 0, SEEK_SET);
 }
 
 int f_stat(int fd, inode_t* inode) {
+    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
+        error = INVALID_FD;
+        return FAILURE;
+    }
 
+    vnode_t* vnode = ft[fd]->vnode;
+    FILE* disk = disks[vnode->disk];
+    fseek(disk, vnode->inode, SEEK_SET);
+    fread(inode, sizeof(inode_t), 1, disk);
+    return SUCCESS;
 }
 
 int f_remove(int fd) {
@@ -299,6 +321,10 @@ int split_path(const char* pathname, char*** tokens) {
         strcpy(*((*tokens) + count - 1), name);
     }
     return count;
+}
+
+static void free_path(char** path) {
+    
 }
 
 vnode_t* get_vnode(vnode_t* parentdir, char* filename) {

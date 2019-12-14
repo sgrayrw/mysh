@@ -10,6 +10,7 @@ typedef enum {
     NOT_DIR,
     INVALID_SOURCE,
     TARGET_EXISTS,
+    INVALID_FD,
 
     // fmount
     DISKS_EXCEEDED,
