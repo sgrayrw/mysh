@@ -63,6 +63,6 @@ static long long get_block(int n_disk);
 static long long get_inode(int n_disk);
 static void free_block(int n_disk, long long address);
 static void free_inode(int n_disk, long long address);
-static void read(vnode_t* vnode, void* buf, long long offset, size_t size);
-static void write(vnode_t* vnode, void* buf, long long offset, size_t size);
+static long long get_block_address(vnode_t* vnode, long long block_number);
+static int get_block_index(long long block_number,int* index);
 #endif
