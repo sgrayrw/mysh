@@ -12,6 +12,9 @@ typedef enum {
     TARGET_EXISTS,
     INVALID_FD,
 
+    // fread
+    F_EOF,
+
     // fmount
     DISKS_EXCEEDED,
 } errno;

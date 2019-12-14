@@ -45,7 +45,7 @@ ssize_t f_read(int fd, void *buf, size_t count) {
         return FAILURE;
     }
 
-    vnode_t* vnode = ft[fd]->vnode;
+    
 
 }
 
@@ -75,12 +75,9 @@ int f_seek(int fd, long offset, int whence) {
         file->position += offset;
     }else if (whence == SEEK_END){
         long long address = file->vnode->inode;
-        FILE* disk = disks[file->vnode->disk];
-        fseek(disk,address,SEEK_SET);
-        inode_t* inode = malloc(sizeof(inode_t));
-        fread(inode,sizeof(inode_t),1,disk);
-        file->position = inode->size+offset;
-        free(inode);
+        inode_t inode;
+        vnode_to_inode(file->vnode, &inode);
+        file->position = inode.size + offset;
     }
     return SUCCESS;
 }
@@ -95,15 +92,12 @@ int f_stat(int fd, inode_t* inode) {
         return FAILURE;
     }
 
-    vnode_t* vnode = ft[fd]->vnode;
-    FILE* disk = disks[vnode->disk];
-    fseek(disk, vnode->inode, SEEK_SET);
-    fread(inode, sizeof(inode_t), 1, disk);
+    vnode_to_inode(ft[fd]->vnode, inode);
     return SUCCESS;
 }
 
 int f_remove(int fd) {
-    file_t* file  = ft[fd];
+    file_t* file = ft[fd];
     vnode_t* vnode = file->vnode;
     FILE* disk = disks[vnode->disk];
     inode_t* inode = malloc(sizeof(inode_t));
@@ -415,18 +409,24 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
     return NULL;
 }
 
-int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
-    inode_t* parent_inode;
-    FILE* disk = disks[dir->disk];
-    fseek(disk, dir->inode, SEEK_SET);
-    fread(&parent_inode, sizeof(inode_t), 1, disk);
+void vnode_to_inode(vnode_t* vnode, inode_t* inode) {
+    FILE* disk = disks[vnode->disk];
+    fseek(disk, vnode->inode, SEEK_SET);
+    fread(inode, sizeof(inode_t), 1, disk);
+}
 
-    if (n > parent_inode->size)
+int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
+    inode_t dir_inode;
+    vnode_to_inode(dir, &dir_inode);
+
+    if (n > dir_inode.size)
         return FAILURE;
 
-    // TODO
     read(dir, dirent, n * sizeof(dirent_t), sizeof(dirent_t));
 
+    FILE* disk = disks[dir->disk];
+    fseek(disk, dirent->inode, SEEK_SET);
+    fread(inode, sizeof(inode_t), 1, disk);
     return SUCCESS;
 }
 

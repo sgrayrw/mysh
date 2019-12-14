@@ -52,6 +52,7 @@ static void dump_vnode(vnode_t* vnode, int depth);
 static int split_path(const char* pathname, char*** tokens);
 static void free_path(char** path);
 static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
+static void vnode_to_inode(vnode_t* vnode, inode_t* inode);
 static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n: return the nth dirent
 static vnode_t* create_file(vnode_t* parent, char* filename);
 static long long get_block(int n_disk);
