@@ -50,19 +50,24 @@ void term();
 void dump(); // dump vnode tree for debugging
 int set_wd(const char* pathname);
 
-static void rm_vnode(vnode_t* vnode);
 static void dump_vnode(vnode_t* vnode, int depth);
 static int split_path(const char* pathname, char*** tokens);
 static void free_path(char** path);
 static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
+
 static void fetch_inode(vnode_t* vnode, inode_t* inode);
 static void update_inode(vnode_t* vnode, inode_t* inode);
+
 static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n: return the nth dirent
 static vnode_t* create_file(vnode_t* parent, char* filename);
 static long long get_block(int n_disk);
 static long long get_inode(int n_disk);
+static void cleandata(vnode_t* vnode);
+
 static void free_block(int n_disk, long long address);
-static void free_inode(int n_disk, long long address);
+static void free_inode(vnode_t* vnode);
+static void free_vnode(vnode_t* vnode);
+
 static long long get_block_address(vnode_t* vnode, long long block_number);
 static int get_block_index(long long block_number,int* index);
 static bool has_permission(vnode_t* vnode, char mode);
