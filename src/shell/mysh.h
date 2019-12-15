@@ -16,4 +16,11 @@ void login();
 
 extern int user_id;
 
+#define USER "John Doe"
+#define SUPERUSER "Admin"
+#define USER_PWD "000000"
+#define SUPERUSER_PWD "666666"
+#define ID_SUPERUSER 1
+#define ID_USER 2
+
 #endif

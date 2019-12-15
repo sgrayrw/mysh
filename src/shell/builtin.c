@@ -405,7 +405,7 @@ void my_mkdir() {
         fprintf(stderr, "usage: mkdir <directory>...\n");
     } else {
         for (int i = 1; i < length; i++) {
-            if (f_mkdir(currenttokens[i]) == FAILURE) {
+            if (f_mkdir(currenttokens[i], "rw--") == FAILURE) {
                 //TODO error handling
             }
         }
