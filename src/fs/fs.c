@@ -505,7 +505,7 @@ int f_umount(const char* target) {
         }
     }
     free_path(path);
-    rm_vnode(mountpoint);
+    free_vnode(mountpoint);
     return SUCCESS;
 }
 
