@@ -225,19 +225,22 @@ void login() {
         printf("Failed to detect DISK. Please run the format program to make one.\n");
         exit(EXIT_SUCCESS);
     }
-    if (f_opendir(USER) == FAILURE) {
+    int fd;
+    fd = f_opendir(USER);
+    if (fd == FAILURE) {
         f_mkdir(USER, "rw--");
         //TODO stats, owner
     } else {
-        f_closedir(USER);
+        f_closedir(fd);
     }
-    if (f_opendir(SUPERUSER) == FAILURE) {
+    fd = f_opendir(SUPERUSER);
+    if (fd == FAILURE) {
         f_mkdir(SUPERUSER, "rw--");
         //TODO stats, owner
     } else {
-        f_closedir(SUPERUSER);
+        f_closedir(fd);
     }
-    char *user, *pwd;
+    char *user = NULL, *pwd = NULL;
     size_t a = 0, b = 0;
     while (user_id == 0) {
         printf("Username: ");
@@ -246,7 +249,7 @@ void login() {
         getline(&pwd, &b, stdin);
         if (strcmp(user, USER"\n") == 0 && strcmp(pwd, USER_PWD"\n") == 0) {
             user_id = ID_USER;
-        } else if (strcmp(user, SUPERUSER"\n") == 0 && strcmp(pwd, SUPERUSER_PWD)) {
+        } else if (strcmp(user, SUPERUSER"\n") == 0 && strcmp(pwd, SUPERUSER_PWD) == 0) {
             user_id = ID_SUPERUSER;
         } else {
             printf("Invalid username or password.\n");

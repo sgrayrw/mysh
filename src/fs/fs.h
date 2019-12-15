@@ -35,7 +35,7 @@ ssize_t f_read(int fd, void* buf, size_t count);
 ssize_t f_write(int fd, void* buf, size_t count);
 int f_seek(int fd, long offset, int whence);
 int f_rewind(int fd);
-int f_stat(int fd, inode_t* inode);
+int f_stat(const char* pathname, inode_t* inode);
 int f_remove(int fd);
 int f_opendir(const char* pathname);
 int f_readdir(int fd, char** filename, inode_t* inode);
@@ -44,6 +44,7 @@ int f_mkdir(const char* pathname, const char* mode);
 int f_rmdir(const char* pathname);
 int f_mount(const char* source, const char* target);
 int f_umount(const char* target);
+int f_chmod(const char* pathname, char *permission_new);
 
 void init();
 void term();
