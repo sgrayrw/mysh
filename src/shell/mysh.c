@@ -15,13 +15,6 @@
 #include "../fs/fs.h"
 #include "../fs/error.h"
 
-#define USER "John Doe"
-#define SUPERUSER "Admin"
-#define USER_PWD "000000"
-#define SUPERUSER_PWD "666666"
-#define ID_SUPERUSER 1
-#define ID_USER 2
-
 // global vars
 bool print;
 char *line; // dynamically allocated in read_line()
@@ -35,11 +28,12 @@ struct termios mysh_tc;
 int user_id = 0;
 
 int main() {
+
+    login();
+
     jobs = NULL;
     initialize_handlers(); // register for signal handlers
     tcgetattr(STDIN_FILENO, &mysh_tc);
-
-    login();
 
     while (true) {
 
@@ -232,13 +226,13 @@ void login() {
         exit(EXIT_SUCCESS);
     }
     if (f_opendir(USER) == FAILURE) {
-        f_mkdir(USER);
+        f_mkdir(USER, "rw--");
         //TODO stats, owner
     } else {
         f_closedir(USER);
     }
     if (f_opendir(SUPERUSER) == FAILURE) {
-        f_mkdir(SUPERUSER);
+        f_mkdir(SUPERUSER, "rw--");
         //TODO stats, owner
     } else {
         f_closedir(SUPERUSER);
@@ -258,6 +252,8 @@ void login() {
             printf("Invalid username or password.\n");
         }
     }
+    free(user);
+    free(pwd);
     if (user_id == ID_SUPERUSER) {
         set_wd(SUPERUSER);
     } else {
