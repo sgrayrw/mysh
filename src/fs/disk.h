@@ -26,6 +26,7 @@ typedef struct inode_t {
     long long next_inode; /* position of next free inode */
     char permission[LEN_PERMISSION];
     long long size; /* number of bytes in file */
+    int dir_size; /* number of entries in directory */
     f_type type;
     int uid; /* owner’s user ID */
     time_t mtime; /* modification time */

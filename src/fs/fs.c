@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "error.h"
 #include "fs.h"
+#include "../shell/mysh.h"
 
 errno error;
 char* wd;
@@ -31,6 +32,7 @@ int f_open(const char* pathname, const char* mode) {
 
     vnode_t* vnode = get_vnode(parentdir, path[length - 1]);
     if (vnode && vnode->type == DIR) {
+        // if entry exists but is a directory, return failure
         error = NOT_FILE;
         return FAILURE;
     }
@@ -39,28 +41,47 @@ int f_open(const char* pathname, const char* mode) {
     f_mode fmode;
     if (mode[0] == 'r') {
         if (!vnode) {
+            // "r" mode and file doesn't exist, return failure
             error = INVALID_PATH;
             return FAILURE;
         }
+        if (!has_permission(vnode, 'r')) {
+            error = PERM_DENIED;
+            return FAILURE;
+        }
+
         position = 0;
         fmode = RDONLY;
     } else {
+        inode_t inode;
         if (!vnode) {
+            // "w" or "a" mode and file doesn't exist, create new one
+            if (!has_permission(parentdir, 'w')) {
+                error = PERM_DENIED;
+                return FAILURE;
+            }
             vnode = create_file(parentdir, path[length - 1]);
             if (!vnode) {
                 error = DISK_FULL;
                 return FAILURE;
             }
-            inode_t inode;
             vnode_to_inode(vnode, &inode);
-            inode.uid = user;
+            inode.uid = user_id;
             // default permission
             inode.permission[0] = 'r';
             inode.permission[1] = 'w';
             inode.permission[2] = inode.permission[3] = '-';
             update_inode(vnode, &inode);
-        } else if (mode[0] == 'w') {
-            // with "w" mode, if file already exists, truncate file
+        } else {
+            // file exists
+            if (!has_permission(vnode, 'w')) {
+                error = PERM_DENIED;
+                return FAILURE;
+            }
+            vnode_to_inode(vnode, &inode);
+            if (mode[0] == 'w') {
+                // with "w" mode, if file already exists, truncate file
+            }
         }
 
         if (mode[0] == 'w')
@@ -109,6 +130,11 @@ ssize_t f_read(int fd, void* buf, size_t count) {
     }
 
     file_t* file = ft[fd];
+    if (file->mode == WRONLY) {
+        error = MODE_ERR;
+        return FAILURE;
+    }
+
     FILE* disk = disks[file->vnode->disk];
     inode_t inode;
     vnode_to_inode(file->vnode, &inode);
@@ -143,6 +169,11 @@ ssize_t f_write(int fd, void* buf, size_t count) {
     }
 
     file_t* file = ft[fd];
+    if (file->mode == RDONLY) {
+        error = MODE_ERR;
+        return FAILURE;
+    }
+
     FILE* disk = disks[file->vnode->disk];
     inode_t inode;
     vnode_to_inode(file->vnode, &inode);
@@ -165,7 +196,7 @@ ssize_t f_write(int fd, void* buf, size_t count) {
     long long preoffset;
     long long postoffset;
     for (long long order = startbl; order <= endbl; order++){
-        if (address = get_block_address(file->vnode, order)==FAILURE){
+        if ((address = get_block_address(file->vnode, order))==FAILURE){
             error = DISK_FULL;
             return FAILURE;
         }
@@ -178,7 +209,15 @@ ssize_t f_write(int fd, void* buf, size_t count) {
     }
 
     file->position = endposition+1;
-    return endposition-file->position+1;
+    ssize_t ret = endposition-file->position+1;
+
+    // update time
+    vnode_to_inode(file->vnode, &inode);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    inode.mtime = tv.tv_sec;
+    update_inode(file->vnode, &inode);
+    return ret;
 }
 
 int f_seek(int fd, long offset, int whence) {
@@ -216,7 +255,17 @@ int f_stat(int fd, inode_t* inode) {
 }
 
 int f_remove(int fd) {
+    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
+        error = INVALID_FD;
+        return FAILURE;
+    }
+
     file_t* file = ft[fd];
+    if (file->mode == RDONLY) {
+        error = MODE_ERR;
+        return FAILURE;
+    }
+
     vnode_t* vnode = file->vnode;
     FILE* disk = disks[vnode->disk];
     inode_t* inode = malloc(sizeof(inode_t));
@@ -245,24 +294,36 @@ int f_remove(int fd) {
 int f_opendir(const char* pathname) {
     char** path;
     int length = split_path(pathname, &path);
-    vnode_t* dir_vnode = vnodes;
+    vnode_t* vnode = vnodes;
     for (int i = 0; i < length; i++){
-        dir_vnode = get_vnode(dir_vnode, path[i]);
-        if (!dir_vnode) {
+        vnode = get_vnode(vnode, path[i]);
+        if (!vnode) {
             error = INVALID_PATH;
             return FAILURE;
         }
-        if (dir_vnode->type != DIR) {
+        if (vnode->type != DIR) {
             error = NOT_DIR;
             return FAILURE;
         }
     }
 
+    f_mode fmode;
+    if (has_permission(vnode, 'r') && has_permission(vnode, 'w'))
+        fmode = RDWR;
+    else if (has_permission(vnode, 'r'))
+        fmode = RDONLY;
+    else if (has_permission(vnode, 'w'))
+        fmode = WRONLY;
+    else {
+        error = PERM_DENIED;
+        return FAILURE;
+    }
+
     // add to open file table
     file_t* dir = malloc(sizeof(file_t));
     dir->position = 0;
-    dir->vnode = dir_vnode;
-    dir->mode = RDWR;
+    dir->vnode = vnode;
+    dir->mode = fmode;
     int fd = -1;
     for (int i = 0; i < MAX_OPENFILE; ++i) {
         if (!ft[i]) {
@@ -281,7 +342,20 @@ int f_opendir(const char* pathname) {
 }
 
 int f_readdir(int fd, char** filename, inode_t* inode) {
+    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
+        error = INVALID_FD;
+        return FAILURE;
+    }
 
+    file_t* file = ft[fd];
+    if (file->mode == WRONLY) {
+        error = PERM_DENIED;
+        return FAILURE;
+    }
+
+
+
+    inode->size = inode->dir_size;
 }
 
 int f_closedir(int fd) {
@@ -911,4 +985,17 @@ long long get_block_address(vnode_t* vnode, long long block_number){
             return address;
         }
     }
+}
+
+bool has_permission(vnode_t* vnode, char mode) {
+    if (user_id == ID_SUPERUSER)
+        return true;
+
+    inode_t inode;
+    vnode_to_inode(vnode, &inode);
+
+    if (inode.uid == user_id)
+        return (inode.permission[0] == mode || inode.permission[1] == mode);
+    else
+        return (inode.permission[2] == mode || inode.permission[3] == mode);
 }

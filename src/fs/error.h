@@ -13,6 +13,10 @@ typedef enum {
     TARGET_EXISTS,
     INVALID_FD,
     DISK_FULL,
+    PERM_DENIED,
+
+    // fread, fwrite
+    MODE_ERR,
 
     // fopen, fopendir
     FT_EXCEEDED, // max # of opened files reached

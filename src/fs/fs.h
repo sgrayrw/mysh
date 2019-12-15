@@ -2,6 +2,7 @@
 #define FS_H
 
 #include <sys/types.h>
+#include <stdbool.h>
 #include "disk.h"
 
 #define MAX_DISKS 16
@@ -16,7 +17,6 @@ typedef struct vnode_t {
     struct vnode_t* children;
     struct vnode_t* next;
     struct vnode_t* prev;
-    int cur_entry; // next entry to return for f_readdir
 } vnode_t;
 
 typedef enum {RDONLY, WRONLY, RDWR} f_mode;
@@ -65,4 +65,5 @@ static void free_block(int n_disk, long long address);
 static void free_inode(int n_disk, long long address);
 static long long get_block_address(vnode_t* vnode, long long block_number);
 static int get_block_index(long long block_number,int* index);
+static bool has_permission(vnode_t* vnode, char mode);
 #endif
