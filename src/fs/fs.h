@@ -44,7 +44,7 @@ int f_mkdir(const char* pathname, char* mode);
 int f_rmdir(const char* pathname);
 int f_mount(const char* source, const char* target);
 int f_umount(const char* target);
-int f_chmod(const char* pathname, char *permission_new);
+int f_chmod(const char* pathname, char* mode);
 
 void init();
 void term();
