@@ -233,12 +233,11 @@ int f_seek(int fd, long offset, int whence) {
     }
 
     file_t* file = ft[fd];
-    if (whence  == SEEK_SET){
+    if (whence == SEEK_SET){
         file->position = offset;
     }else if (whence == SEEK_CUR){
         file->position += offset;
     }else if (whence == SEEK_END){
-        long long address = file->vnode->inode;
         inode_t inode;
         fetch_inode(file->vnode, &inode);
         file->position = inode.size + offset;
@@ -477,6 +476,7 @@ int f_mount(const char* source, const char* target) {
     }
     disks[n_disk] = disk;
     sb_t* sb = malloc(sizeof(sb_t));
+    fseek(disk, BOOTSIZE, SEEK_SET);
     fread(sb, sizeof(sb_t), 1, disk);
     superblocks[n_disk] = sb;
 
@@ -717,12 +717,14 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
     inode_t dir_inode;
     fetch_inode(dir, &dir_inode);
 
-    if (n > dir_inode.size)
+    if (n >= dir_inode.size)
         return FAILURE;
 
     FILE* disk = disks[dir->disk];
     long long block_number = n / 2 + 1;
+    printf("size %lld\n", dir_inode.size);
     long long block_addr = get_block_address(dir, block_number);
+    printf("size %lld\n", dir_inode.size);
     fseek(disk, block_addr + (BLOCKSIZE * (n % 2)), SEEK_SET);
     fread(dirent, sizeof(dirent_t), 1, disk);
     if (dirent->type != EMPTY) {

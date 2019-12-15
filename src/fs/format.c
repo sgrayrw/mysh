@@ -68,6 +68,7 @@ void format() {
     // inodes
     fseek(out, sb->inode_start, SEEK_SET);
     inode_t* inode = calloc(1, sizeof(inode_t));
+    inode->size = 0;
     long long root_inode;
     for (int i = 0; i < N_INODES; ++i) {
         inode->next_inode = (i == N_INODES - 1) ? (-1) : (sb->inode_start + (i + 1) * (long long) sizeof(inode_t));
@@ -93,6 +94,7 @@ void format() {
     long long data_start = ((inode_end - 1) / BLOCKSIZE + 1) * BLOCKSIZE; // round up to multiples of BLOCKSIZE
     sb->data_start = sb->free_block = data_start;
     sb->root_inode = root_inode;
+    printf("root %lld\n", sb->root_inode);
 
     fseek(out, BOOTSIZE, SEEK_SET);
     fwrite(sb, sizeof(sb_t), 1, out);
