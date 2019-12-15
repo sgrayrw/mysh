@@ -774,7 +774,7 @@ static long long get_inode(int n_disk){
     return address;
 }
 
-vnode_t* create_file(vnode_t* parent, char* filename){
+static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* mode){
     FILE* fs = disks[parent->disk];
     inode_t* inode = malloc(sizeof(inode_t));
     fetch_inode(parent,&inode);
@@ -783,24 +783,35 @@ vnode_t* create_file(vnode_t* parent, char* filename){
     long long order = (inode->size)/2+1;
     long long address = get_block_address(parent, order);
     fetch_inode(parent,&inode);
-
+    inode->dir_size++;
+    inode->size++;
     fseek(fs,address+sizeof(dirent_t)*(inode->size%2),SEEK_SET);
 
     dirent_t* entry = malloc(sizeof(dirent_t));
     if ((entry->inode = get_inode(parent->disk))==FAILURE){
         return NULL;
     }
-
     strcpy(entry->name,filename);
-    entry->type = F;
-
+    entry->type = type;
     fwrite(entry,sizeof(dirent_t),1,fs);
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    inode->mtime = tv.tv_sec;
     update_inode(parent,inode);
+
+    // initialize children
+    vnode_t* children = get_vnode(parent, filename);
+    fetch_inode(children,inode);
+    inode->type = type;
+    strcpy(inode->permission,mode);
+    inode->uid = user_id;
+    inode->size = inode->dir_size = 0;
+    inode->mtime = tv.tv_sec;
+    update_inode(children, inode);
 
     free(inode);
     free(entry);
-
-    return get_vnode(parent, filename);
 }
 
 static void cleandata(vnode_t* vnode){
