@@ -620,7 +620,6 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
         newchild->type = inode.type;
         newchild->parent = parentdir;
         newchild->children = NULL;
-        newchild->cur_entry = 0;
 
         // add to children list of parentdir
         if (!parentdir->children) {
