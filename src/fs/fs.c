@@ -63,7 +63,7 @@ int f_open(const char* pathname, const char* mode) {
                 error = PERM_DENIED;
                 return FAILURE;
             }
-            vnode = create_file(parentdir, path[length - 1]);
+            vnode = create_file(parentdir, path[length - 1], F, "rw--");
             if (!vnode) {
                 error = DISK_FULL;
                 return FAILURE;
@@ -272,10 +272,7 @@ int f_remove(int fd) {
     }
 
     vnode_t* vnode = file->vnode;
-    FILE* disk = disks[vnode->disk];
-    inode_t inode;
-    fetch_inode(vnode,&inode);
-    if (inode.type == DIR){
+    if (vnode->type == DIR){
         return FAILURE;
     }
     //free blocks
@@ -287,6 +284,7 @@ int f_remove(int fd) {
     //free file table entry
     free(ft[fd]);
     ft[fd] = NULL;
+    return SUCCESS;
 }
 
 int f_opendir(const char* pathname) {
@@ -368,7 +366,7 @@ int f_closedir(int fd) {
     return f_close(fd);
 }
 
-int f_mkdir(const char* pathname, const char* mode) {
+int f_mkdir(const char* pathname, char* mode) {
     char** path;
     int length = split_path(pathname, &path);
     if (length == 0) { // `/`
@@ -398,17 +396,43 @@ int f_mkdir(const char* pathname, const char* mode) {
         return FAILURE;
     }
 
-    vnode_t* vnode = create_file(parentdir, path[length - 1]);
+    vnode_t* vnode = create_file(parentdir, path[length - 1], DIR, mode);
     if (!vnode) {
         error = DISK_FULL;
         return FAILURE;
     }
 
-
+    free_path(path);
+    return SUCCESS;
 }
 
 int f_rmdir(const char* pathname) {
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* vnode = vnodes;
+    for (int i = 0; i < length; i++){
+        vnode = get_vnode(vnode, path[i]);
+        if (!vnode) {
+            error = INVALID_PATH;
+            return FAILURE;
+        }
+        if (vnode->type != DIR) {
+            error = NOT_DIR;
+            return FAILURE;
+        }
+    }
 
+    if (!has_permission(vnode, 'w')) {
+        error = PERM_DENIED;
+        return FAILURE;
+    }
+    //free blocks
+    cleandata(vnode);
+    //free inode
+    free_inode(vnode);
+    //free vnode
+    free_vnode(vnode);
+    return SUCCESS;
 }
 
 int f_mount(const char* source, const char* target) {
