@@ -777,12 +777,12 @@ static long long get_inode(int n_disk){
 static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* mode){
     FILE* fs = disks[parent->disk];
     inode_t* inode = malloc(sizeof(inode_t));
-    fetch_inode(parent,&inode);
+    fetch_inode(parent,inode);
 
     int end = 0;
     long long order = (inode->size)/2+1;
     long long address = get_block_address(parent, order);
-    fetch_inode(parent,&inode);
+    fetch_inode(parent,inode);
     inode->dir_size++;
     inode->size++;
     fseek(fs,address+sizeof(dirent_t)*(inode->size%2),SEEK_SET);
