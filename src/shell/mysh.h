@@ -25,4 +25,6 @@ extern int user_id;
 #define ID_SUPERUSER 1
 #define ID_USER 2
 
+char *user_table[3] = {"", SUPERUSER, USER};
+
 #endif

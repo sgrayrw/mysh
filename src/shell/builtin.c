@@ -300,19 +300,27 @@ issues to think about:
 
 ****************************/
 
-
+void translate_time(time_t mtime) {
+    printf("feature (mtime) to be implemented"); //TODO
+}
 
 void ls_directory(int fd, bool mode_F, bool mode_l) {
     char indicator, *filename;
     inode_t stats;
     bool need_to_append_newline = false;
     while (f_readdir(fd, &filename, &stats) == SUCCESS) {
+        if (stats.type == EMPTY) {
+            continue;
+        }
         indicator = 0;
         if (mode_F && stats.type == DIR) {
             indicator = '/';
         }
         if (mode_l) {
-            printf("%lld%s%c\n", stats.size, filename, indicator);  //TODO long list form
+            printf("%c%c%c%c", stats.permission[0], stats.permission[1], stats.permission[2], stats.permission[3]);
+            printf("\t%s\t%lld\t", user_table[stats.uid], stats.size);
+            translate_time(stats.mtime);
+            printf("\t%s%c\n", filename, indicator);
         } else {
             printf("%s%c\t", filename, indicator);
             need_to_append_newline = true;
@@ -334,7 +342,7 @@ void my_ls() {
                 } else if (currenttokens[index][i] == 'l') {
                     mode_l = true;
                 } else {
-                    fprintf(stderr, "ls: invalid option -- '%c'\n");
+                    fprintf(stderr, "ls: invalid option -- '%c'\n", currenttokens[index][i]);
                     return;
                 }
             }
@@ -363,18 +371,18 @@ void my_ls() {
                 fd = f_opendir(currenttokens[index]);
 
                 if (fd == FAILURE) {
-                    fd = f_open(currenttokens[index], "r"); //TODO mode flag
-                    if (fd == FAILURE) {
+                    if (f_stat(currenttokens[index], &stats) == FAILURE) {
                         //TODO error handling
                     } else {
                         printf("%s:\n", currenttokens[index]);
                         if (mode_l) {
-                            f_stat(fd, &stats);
-                            printf("%lld%s\n", stats.size, currenttokens[index]); //TODO long list format
+                            printf("%c%c%c%c", stats.permission[0], stats.permission[1], stats.permission[2], stats.permission[3]);
+                            printf("\t%s\t%lld\t", user_table[stats.uid], stats.size);
+                            translate_time(stats.mtime);
+                            printf("\t%s\n", currenttokens[index]);
                         } else {
                             printf("%s\n", currenttokens[index]);
                         }
-                        f_close(fd);
                     }
 
                 } else {
@@ -390,13 +398,118 @@ void my_ls() {
 }
 
 void my_chmod() {
+    enum {Invalid, Absolute, Symbolic} mode;
+    bool r_bit = false, w_bit = false;
+    char permission_new[4];
     if (length < 3) {
         fprintf(stderr, "usage: chmod <permissions> <file>...\n");
     } else {
-        int fd;
-        for (int i = 2; i < length; i++) {
-            //TODO chmod implementation
+
+        if (currenttokens[1][0] == 'u' || currenttokens[1][0] == 'o' || currenttokens[1][0] == 'a') {
+            if (currenttokens[1][1] == '+' || currenttokens[1][1] == '-' || currenttokens[1][1] == '=') {
+                mode = Symbolic;
+                for (int index = 2; index < strlen(currenttokens[1]); index++) {
+                    if (currenttokens[1][index] == 'r') {
+                        r_bit = true;
+                    } else if (currenttokens[1][index] == 'w') {
+                        w_bit = true;
+                    } else {
+                        mode = Invalid;
+                        break;
+                    }
+                }
+            } else {
+                mode = Invalid;
+            }
+
+        } else {
+            char *remains = NULL;
+            long permission_num = strtol(currenttokens[1], &remains, 4);
+            if (0 <= permission_num && permission_num <= 15 && remains == NULL) {
+                mode = Absolute;
+                if (permission_num >= 8) {
+                    permission_new[0] = 'r';
+                    permission_num -= 8;
+                } else {
+                    permission_new[0] = '-';
+                }
+                if (permission_num >= 4) {
+                    permission_new[1] = 'w';
+                    permission_num -= 4;
+                } else {
+                    permission_new[1] = '-';
+                }
+                if (permission_num >= 2) {
+                    permission_new[2] = 'r';
+                    permission_num -= 2;
+                } else {
+                    permission_new[2] = '-';
+                }
+                if (permission_num >= 1) {
+                    permission_new[3] = 'w';
+                } else {
+                    permission_new[3] = '-';
+                }
+            } else {
+                mode = Invalid;
+            }
         }
+
+        if (mode == Invalid) {
+            fprintf(stderr, "chmod: invalid mode: '%s'\n", currenttokens[1]);
+        } else {
+            for (int i = 2; i < length; i++) {
+                inode_t stats;
+                if (f_stat(currenttokens[i], &stats) == FAILURE) {
+                    //TODO error handling
+                } else if (user_id != ID_SUPERUSER && stats.uid != user_id){
+                    fprintf(stderr, "chmod: '%s': permission denied\n", currenttokens[i]);
+                } else {
+                    if (mode == Absolute) {
+                        if (f_chmod(currenttokens[i], permission_new) == FAILURE) {
+                            //TODO error handling
+                        }
+                    } else {
+                        if (currenttokens[1][0] != '0') {
+                            if (r_bit) {
+                                if (currenttokens[1][1] == '-') {
+                                    stats.permission[0] = '-';
+                                } else {
+                                    stats.permission[0] = 'r';
+                                }
+                            }
+                            if (w_bit) {
+                                if (currenttokens[1][1] == '-') {
+                                    stats.permission[1] = '-';
+                                } else {
+                                    stats.permission[1] = 'w';
+                                }
+                            }
+                        }
+                        if (currenttokens[1][0] != 'u') {
+                            if (r_bit) {
+                                if (currenttokens[1][1] == '-') {
+                                    stats.permission[2] = '-';
+                                } else {
+                                    stats.permission[2] = 'r';
+                                }
+                            }
+                            if (w_bit) {
+                                if (currenttokens[1][1] == '-') {
+                                    stats.permission[3] = '-';
+                                } else {
+                                    stats.permission[3] = 'w';
+                                }
+                            }
+                        }
+                        if (f_chmod(currenttokens[i], stats.permission) == FAILURE) {
+                            //TODO error handling
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }
 
@@ -452,7 +565,7 @@ void my_cat() {
         cat_helper(fd);
     } else {
         for (int i = 1; i < length; i++) {
-            fd = f_open(currenttokens[i], "r"); //TODO mode flag
+            fd = f_open(currenttokens[i], "r");
             if (fd == FAILURE) {
                 //TODO error handling
             } else {
@@ -465,7 +578,7 @@ void my_cat() {
 
 void my_more() {
     if (length == 1) {
-        fprintf("usage: more <file>...\n");
+        fprintf(stderr, "usage: more <file>...\n");
     } else {
         int fd, n;
         long long count;
@@ -475,11 +588,11 @@ void my_more() {
         size_t t = 0;
 
         for (int i = 1; i < length; i++) {
-            fd = f_open(currenttokens[i], "r"); //TODO mode flag
+            fd = f_open(currenttokens[i], "r");
             if (fd == FAILURE) {
                 //TODO error handling
             } else {
-                f_stat(fd, &stats);
+                f_stat(currenttokens[i], &stats);
                 count = 0;
                 while (count < stats.size) {
                     n = f_read(fd, buffer, BUFSIZE);
@@ -536,7 +649,7 @@ void my_mount() {
                     fprintf(stderr, "mount: %s: target already exists\n", currenttokens[2]);
                     break;
                 case DISKS_EXCEEDED:
-                    fprintf(stderr, "mount: already reached the maximum number of disk mounts\n", currenttokens[2]);
+                    fprintf(stderr, "mount: already reached the maximum number of disk mounts\n");
                     break;
                 case INVALID_SOURCE:
                     fprintf(stderr, "mount: invalid disk\n");
