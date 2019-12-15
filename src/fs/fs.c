@@ -17,6 +17,10 @@ static file_t* ft[MAX_OPENFILE]; // open file table
 int f_open(const char* pathname, const char* mode) {
     char** path;
     int length = split_path(pathname, &path);
+    if (length == 0) { // `/`
+        error = TARGET_EXISTS;
+        return FAILURE;
+    }
     vnode_t* parentdir = vnodes;
     for (int i = 0; i < length - 1; i++){
         parentdir = get_vnode(parentdir, path[i]);
@@ -65,7 +69,7 @@ int f_open(const char* pathname, const char* mode) {
                 error = DISK_FULL;
                 return FAILURE;
             }
-            vnode_to_inode(vnode, &inode);
+            fetch_inode(vnode, &inode);
             inode.uid = user_id;
             // default permission
             inode.permission[0] = 'r';
@@ -78,7 +82,7 @@ int f_open(const char* pathname, const char* mode) {
                 error = PERM_DENIED;
                 return FAILURE;
             }
-            vnode_to_inode(vnode, &inode);
+            fetch_inode(vnode, &inode);
             if (mode[0] == 'w') {
                 // with "w" mode, if file already exists, truncate file
             }
@@ -137,7 +141,7 @@ ssize_t f_read(int fd, void* buf, size_t count) {
 
     FILE* disk = disks[file->vnode->disk];
     inode_t inode;
-    vnode_to_inode(file->vnode, &inode);
+    fetch_inode(file->vnode, &inode);
     if (file->position >= inode.size) {
         error = F_EOF;
         return FAILURE;
@@ -176,7 +180,7 @@ ssize_t f_write(int fd, void* buf, size_t count) {
 
     FILE* disk = disks[file->vnode->disk];
     inode_t inode;
-    vnode_to_inode(file->vnode, &inode);
+    fetch_inode(file->vnode, &inode);
     size_t padding = file->position - inode.size;
     if (padding > 0) {
         // fill in NUL bytes
@@ -212,7 +216,7 @@ ssize_t f_write(int fd, void* buf, size_t count) {
     ssize_t ret = endposition-file->position+1;
 
     // update time
-    vnode_to_inode(file->vnode, &inode);
+    fetch_inode(file->vnode, &inode);
     struct timeval tv;
     gettimeofday(&tv, NULL);
     inode.mtime = tv.tv_sec;
@@ -234,7 +238,7 @@ int f_seek(int fd, long offset, int whence) {
     }else if (whence == SEEK_END){
         long long address = file->vnode->inode;
         inode_t inode;
-        vnode_to_inode(file->vnode, &inode);
+        fetch_inode(file->vnode, &inode);
         file->position = inode.size + offset;
     }
     return SUCCESS;
@@ -250,7 +254,7 @@ int f_stat(int fd, inode_t* inode) {
         return FAILURE;
     }
 
-    vnode_to_inode(ft[fd]->vnode, inode);
+    fetch_inode(ft[fd]->vnode, inode);
     return SUCCESS;
 }
 
@@ -354,8 +358,10 @@ int f_readdir(int fd, char** filename, inode_t* inode) {
     }
 
     dirent_t dirent;
-    if (readdir(file->vnode, file->position, &dirent, inode) == FAILURE)
+    if (readdir(file->vnode, file->position++, &dirent, inode) == FAILURE)
         return F_EOF;
+
+    if ()
 
     *filename = dirent.name;
     inode->size = inode->dir_size;
@@ -367,6 +373,34 @@ int f_closedir(int fd) {
 }
 
 int f_mkdir(const char* pathname, const char* mode) {
+    char** path;
+    int length = split_path(pathname, &path);
+    if (length == 0) { // `/`
+        error = TARGET_EXISTS;
+        return FAILURE;
+    }
+    vnode_t* parentdir = vnodes;
+    for (int i = 0; i < length - 1; i++){
+        parentdir = get_vnode(parentdir, path[i]);
+        if (!parentdir) {
+            error = INVALID_PATH;
+            return FAILURE;
+        }
+        if (parentdir->type != DIR) {
+            error = NOT_DIR;
+            return FAILURE;
+        }
+    }
+
+    if (!has_permission(parentdir, 'w')) {
+        error = PERM_DENIED;
+        return FAILURE;
+    }
+
+    if (get_vnode(parentdir, path[length - 1])) {
+        error = TARGET_EXISTS;
+        return FAILURE;
+    }
 
 }
 
@@ -639,7 +673,7 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
     return NULL;
 }
 
-void vnode_to_inode(vnode_t* vnode, inode_t* inode) {
+void fetch_inode(vnode_t* vnode, inode_t* inode) {
     FILE* disk = disks[vnode->disk];
     fseek(disk, vnode->inode, SEEK_SET);
     fread(inode, sizeof(inode_t), 1, disk);
@@ -653,12 +687,10 @@ void update_inode(vnode_t* vnode, inode_t* inode) {
 
 int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
     inode_t dir_inode;
-    vnode_to_inode(dir, &dir_inode);
+    fetch_inode(dir, &dir_inode);
 
     if (n > dir_inode.size)
         return FAILURE;
-
-    read(dir, dirent, n * sizeof(dirent_t), sizeof(dirent_t));
 
     FILE* disk = disks[dir->disk];
     fseek(disk, dirent->inode, SEEK_SET);
@@ -903,7 +935,7 @@ int get_block_index(long long block_number, int* index){
 long long get_block_address(vnode_t* vnode, long long block_number){
     FILE* fs = disks[vnode->disk];
     inode_t inode;
-    vnode_to_inode(vnode,&inode);
+    fetch_inode(vnode, &inode);
     long long totalblock = (inode.size-1)/BLOCKSIZE+1;
     bool new = false;
     if (block_number>totalblock){
@@ -995,7 +1027,7 @@ bool has_permission(vnode_t* vnode, char mode) {
         return true;
 
     inode_t inode;
-    vnode_to_inode(vnode, &inode);
+    fetch_inode(vnode, &inode);
 
     if (inode.uid == user_id)
         return (inode.permission[0] == mode || inode.permission[1] == mode);
