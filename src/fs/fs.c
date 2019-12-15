@@ -868,6 +868,9 @@ void free_inode(vnode_t* vnode){
                 fwrite(&entry,sizeof(dirent_t),1,disk);
                 fetch_inode(vnode->parent,&inode);
                 inode.dir_size--;
+                struct timeval tv;
+                gettimeofday(&tv, NULL);
+                inode.mtime = tv.tv_sec;
                 update_inode(vnode->parent,&inode);
                 return;
             }
