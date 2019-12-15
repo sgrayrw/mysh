@@ -76,6 +76,7 @@ int f_open(const char* pathname, const char* mode) {
             }
             if (mode[0] == 'w') {
                 // with "w" mode, if file already exists, truncate file
+                cleandata(vnode);
             }
         }
 
