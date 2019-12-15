@@ -321,7 +321,7 @@ int f_opendir(const char* pathname) {
 
     // add to open file table
     file_t* dir = malloc(sizeof(file_t));
-    dir->position = 0;
+    dir->position = 2; // go past `.` and `..`
     dir->vnode = vnode;
     dir->mode = fmode;
     int fd = -1;
@@ -353,9 +353,13 @@ int f_readdir(int fd, char** filename, inode_t* inode) {
         return FAILURE;
     }
 
+    dirent_t dirent;
+    if (readdir(file->vnode, file->position, &dirent, inode) == FAILURE)
+        return F_EOF;
 
-
+    *filename = dirent.name;
     inode->size = inode->dir_size;
+    return SUCCESS;
 }
 
 int f_closedir(int fd) {
