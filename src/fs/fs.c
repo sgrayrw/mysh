@@ -519,7 +519,7 @@ void init() {
 }
 
 void term() {
-    rm_vnode(vnodes);
+    free_vnode(vnodes);
     for (int i = 0; i < MAX_DISKS; ++i) {
         if (disks[i]){
             fclose(disks[i]);
