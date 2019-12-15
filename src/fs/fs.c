@@ -57,7 +57,6 @@ int f_open(const char* pathname, const char* mode) {
         position = 0;
         fmode = RDONLY;
     } else {
-        inode_t inode;
         if (!vnode) {
             // "w" or "a" mode and file doesn't exist, create new one
             if (!has_permission(parentdir, 'w')) {
@@ -69,20 +68,12 @@ int f_open(const char* pathname, const char* mode) {
                 error = DISK_FULL;
                 return FAILURE;
             }
-            fetch_inode(vnode, &inode);
-            inode.uid = user_id;
-            // default permission
-            inode.permission[0] = 'r';
-            inode.permission[1] = 'w';
-            inode.permission[2] = inode.permission[3] = '-';
-            update_inode(vnode, &inode);
         } else {
             // file exists
             if (!has_permission(vnode, 'w')) {
                 error = PERM_DENIED;
                 return FAILURE;
             }
-            fetch_inode(vnode, &inode);
             if (mode[0] == 'w') {
                 // with "w" mode, if file already exists, truncate file
             }
@@ -90,8 +81,11 @@ int f_open(const char* pathname, const char* mode) {
 
         if (mode[0] == 'w')
             position = 0;
-        else // mode "a"
+        else { // mode "a"
+            inode_t inode;
+            fetch_inode(vnode, &inode);
             position = inode.size;
+        }
 
         fmode = WRONLY;
     }
@@ -404,7 +398,12 @@ int f_mkdir(const char* pathname, const char* mode) {
         return FAILURE;
     }
 
-    
+    vnode_t* vnode = create_file(parentdir, path[length - 1]);
+    if (!vnode) {
+        error = DISK_FULL;
+        return FAILURE;
+    }
+
 
 }
 

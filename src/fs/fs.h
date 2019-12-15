@@ -59,7 +59,7 @@ static void fetch_inode(vnode_t* vnode, inode_t* inode);
 static void update_inode(vnode_t* vnode, inode_t* inode);
 
 static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n: return the nth dirent
-static vnode_t* create_file(vnode_t* parent, char* filename);
+static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* mode);
 static long long get_block(int n_disk);
 static long long get_inode(int n_disk);
 static void cleandata(vnode_t* vnode);
