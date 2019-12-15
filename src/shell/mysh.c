@@ -12,6 +12,15 @@
 #include "job.h"
 #include "builtin.h"
 #include "sighand.h"
+#include "../fs/fs.h"
+#include "../fs/error.h"
+
+#define USER "John Doe"
+#define SUPERUSER "Admin"
+#define USER_PWD "000000"
+#define SUPERUSER_PWD "666666"
+#define ID_SUPERUSER 1
+#define ID_USER 2
 
 // global vars
 bool print;
@@ -23,10 +32,14 @@ struct Node* logic_jobs = NULL;
 int jobcnt = 0;
 struct termios mysh_tc;
 
+int user_id = 0;
+
 int main() {
     jobs = NULL;
     initialize_handlers(); // register for signal handlers
     tcgetattr(STDIN_FILENO, &mysh_tc);
+
+    login();
 
     while (true) {
 
@@ -42,7 +55,7 @@ int main() {
 
 void read_line() {
     size_t n = 0;
-    printf("mysh ❯ ");
+    printf("mysh ❯ "); //TODO change prompt
     if (getline(&line, &n, stdin) == -1) {
         if (feof(stdin)) {
             my_exit();
@@ -141,10 +154,6 @@ void launch_process(bool background) {
     int i, status, jid;
     pid_t pid;
 
-    if (builtin(args, argc) == true) {
-        return;
-    }
-
     pid = fork();
 
     if (pid == 0) { // child
@@ -152,6 +161,13 @@ void launch_process(bool background) {
             signal(i, SIG_DFL);
         }
         setpgrp();
+
+        if (builtin(args, argc) == true) {
+            free_list();
+            free_tokens();
+            exit(EXIT_SUCCESS);
+        }
+
         if (execvp(args[0], args) == -1) {
             if (errno == ENOENT) {
                 fprintf(stderr, "No such file or directory.\n");
@@ -162,6 +178,7 @@ void launch_process(bool background) {
             free_tokens();
             exit(EXIT_FAILURE);
         }
+
     } else if (pid > 0) { // parent
         setpgid(pid, pid);
         jid = add_job(pid, Running, argc, args, &mysh_tc);
@@ -173,6 +190,7 @@ void launch_process(bool background) {
         } else {
             printf("[%d] %d\n", jid, pid);
         }
+
     } else {
         fprintf(stderr, "Error forking a process.\n");
     }
@@ -197,5 +215,52 @@ void free_tokens() {
     if (line != NULL) {
         free(line);
         line = NULL;
+    }
+}
+
+
+
+/******************
+
+hw7
+
+******************/
+
+void login() {
+    if (f_mount("DISK", "/") == FAILURE) {
+        printf("Failed to detect DISK. Please run the format program to make one.\n");
+        exit(EXIT_SUCCESS);
+    }
+    if (f_opendir(USER) == FAILURE) {
+        f_mkdir(USER);
+        //TODO stats, owner
+    } else {
+        f_closedir(USER);
+    }
+    if (f_opendir(SUPERUSER) == FAILURE) {
+        f_mkdir(SUPERUSER);
+        //TODO stats, owner
+    } else {
+        f_closedir(SUPERUSER);
+    }
+    char *user, *pwd;
+    size_t a = 0, b = 0;
+    while (user_id == 0) {
+        printf("Username: ");
+        getline(&user, &a, stdin);
+        printf("Password: ");
+        getline(&pwd, &b, stdin);
+        if (strcmp(user, USER"\n") == 0 && strcmp(pwd, USER_PWD"\n") == 0) {
+            user_id = ID_USER;
+        } else if (strcmp(user, SUPERUSER"\n") == 0 && strcmp(pwd, SUPERUSER_PWD)) {
+            user_id = ID_SUPERUSER;
+        } else {
+            printf("Invalid username or password.\n");
+        }
+    }
+    if (user_id == ID_SUPERUSER) {
+        set_wd(SUPERUSER);
+    } else {
+        set_wd(USER);
     }
 }
