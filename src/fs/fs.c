@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include "error.h"
 #include "fs.h"
 #include "../shell/mysh.h"
@@ -63,6 +64,7 @@ int f_open(const char* pathname, const char* mode) {
                 error = PERM_DENIED;
                 return FAILURE;
             }
+            printf("start!\n");
             vnode = create_file(parentdir, path[length - 1], F, "rw--");
             if (!vnode) {
                 error = DISK_FULL;
@@ -725,6 +727,7 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
     printf("size %lld\n", dir_inode.size);
     long long block_addr = get_block_address(dir, block_number);
     printf("size %lld\n", dir_inode.size);
+    printf("block_addr%d\n",block_addr);
     fseek(disk, block_addr + (BLOCKSIZE * (n % 2)), SEEK_SET);
     fread(dirent, sizeof(dirent_t), 1, disk);
     if (dirent->type != EMPTY) {
@@ -738,13 +741,11 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
 long long get_block(int n_disk) {
     FILE* disk = disks[n_disk];
     sb_t* sb = superblocks[n_disk];
-
     if (sb->free_block == -1)
         return FAILURE;
 
     // get next free block
     long long free_block = sb->free_block;
-
     // update free block list in superblock
     fseek(disk, free_block, SEEK_SET);
     fread(&(sb->free_block), sizeof(long long), 1, disk);
@@ -752,7 +753,6 @@ long long get_block(int n_disk) {
     // update superblock in disk
     fseek(disk, BOOTSIZE, SEEK_SET);
     fwrite(sb, sizeof(sb_t), 1, disk);
-
     return free_block;
 }
 
@@ -920,12 +920,11 @@ long long get_block_address(vnode_t* vnode, long long block_number){
     FILE* fs = disks[vnode->disk];
     inode_t inode;
     fetch_inode(vnode, &inode);
-    long long totalblock = (inode.size-1)/BLOCKSIZE+1;
+    long long totalblock = inode.size == 0 ? 0 : (inode.size-1)/BLOCKSIZE+1;
     bool new = false;
     if (block_number>totalblock){
         new = true;
     }
-
     int index[6];
     if (get_block_index(block_number,index)==FAILURE){
         return FAILURE;
@@ -974,7 +973,8 @@ long long get_block_address(vnode_t* vnode, long long block_number){
     fwrite(&inode,sizeof(inode_t),1,fs);
     if (new){
         if (index[0] == 0){
-            if ((newaddress = get_block(vnode->disk)==FAILURE)){
+            printf("here/n");
+            if ((newaddress=get_block(vnode->disk)) ==FAILURE){
                 return FAILURE;
             }
             inode.dblocks[index[1]] = newaddress;
