@@ -123,6 +123,7 @@ int f_close(int fd) {
         error = INVALID_FD;
         return FAILURE;
     }
+    free(ft[fd]);
     ft[fd] = NULL;
     return SUCCESS;
 }
@@ -361,10 +362,12 @@ int f_readdir(int fd, char** filename, inode_t* inode) {
     if (readdir(file->vnode, file->position++, &dirent, inode) == FAILURE)
         return F_EOF;
 
-    if ()
-
-    *filename = dirent.name;
-    inode->size = inode->dir_size;
+    if (dirent.type != EMPTY) {
+        *filename = dirent.name;
+        inode->size = inode->dir_size;
+    } else {
+        inode->type = EMPTY;
+    }
     return SUCCESS;
 }
 
@@ -401,6 +404,8 @@ int f_mkdir(const char* pathname, const char* mode) {
         error = TARGET_EXISTS;
         return FAILURE;
     }
+
+    
 
 }
 
@@ -641,7 +646,7 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
     inode_t inode;
     int n = 0;
     while (readdir(parentdir, n, &dirent, &inode) != FAILURE) {
-        if (strcmp(dirent.name, filename) != 0) {
+        if (dirent.type != EMPTY && strcmp(dirent.name, filename) != 0) {
             n++;
             continue;
         }
@@ -693,8 +698,14 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
         return FAILURE;
 
     FILE* disk = disks[dir->disk];
-    fseek(disk, dirent->inode, SEEK_SET);
-    fread(inode, sizeof(inode_t), 1, disk);
+    long long block_number = n / 2 + 1;
+    long long block_addr = get_block_address(dir, block_number);
+    fseek(disk, block_addr + (BLOCKSIZE * (n % 2)), SEEK_SET);
+    fread(dirent, sizeof(dirent_t), 1, disk);
+    if (dirent->type != EMPTY) {
+        fseek(disk, dirent->inode, SEEK_SET);
+        fread(inode, sizeof(inode_t), 1, disk);
+    }
     return SUCCESS;
 }
 

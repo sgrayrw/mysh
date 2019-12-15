@@ -66,4 +66,5 @@ static void free_inode(int n_disk, long long address);
 static long long get_block_address(vnode_t* vnode, long long block_number);
 static int get_block_index(long long block_number,int* index);
 static bool has_permission(vnode_t* vnode, char mode);
+
 #endif
