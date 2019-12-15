@@ -729,6 +729,7 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
         fseek(disk, dirent->inode, SEEK_SET);
         fread(inode, sizeof(inode_t), 1, disk);
     }
+    printf("%d %s\n", n, dirent->name);
     return SUCCESS;
 }
 

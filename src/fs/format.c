@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <sys/time.h>
 #include "disk.h"
+#include "../shell/mysh.h"
 
 void usage();
 void format();
@@ -66,8 +68,23 @@ void format() {
     // inodes
     fseek(out, sb->inode_start, SEEK_SET);
     inode_t* inode = calloc(1, sizeof(inode_t));
+    long long root_inode;
     for (int i = 0; i < N_INODES; ++i) {
         inode->next_inode = (i == N_INODES - 1) ? (-1) : (sb->inode_start + (i + 1) * (long long) sizeof(inode_t));
+
+        if (i == 0) {
+            root_inode = ftell(out);
+            inode->permission[0] = inode->permission[2] = 'r';
+            inode->permission[1] = 'w';
+            inode->permission[3] = '-';
+            inode->type = DIR;
+            inode->uid = ID_SUPERUSER;
+            // update time
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+            inode->mtime = tv.tv_sec;
+        }
+
         fwrite(inode, sizeof(inode_t), 1, out);
     }
 
@@ -75,6 +92,8 @@ void format() {
     long long inode_end = ftell(out);
     long long data_start = ((inode_end - 1) / BLOCKSIZE + 1) * BLOCKSIZE; // round up to multiples of BLOCKSIZE
     sb->data_start = sb->free_block = data_start;
+    sb->root_inode = root_inode;
+
     fseek(out, BOOTSIZE, SEEK_SET);
     fwrite(sb, sizeof(sb_t), 1, out);
 

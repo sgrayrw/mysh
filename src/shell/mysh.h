@@ -1,6 +1,8 @@
 #ifndef MYSH_H
 #define MYSH_H
 
+#include <stdbool.h>
+
 #define DELIMITERS ";& \f\n\r\t\v"
 
 // main loop
