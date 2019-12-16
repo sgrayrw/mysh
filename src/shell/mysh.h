@@ -8,7 +8,7 @@ void read_line(); // read into line buffer
 void parse_line(); // parse arguments with delimiters
 int next_token_length(int); // helper function for parse_line()
 void eval(); // evaluate tokens and call builtin/exec
-void launch_process(bool);
+void launch_process(bool, bool, bool);
 void free_tokens();
 
 // hw7 functions
@@ -24,5 +24,7 @@ extern int user_id;
 #define ID_USER 2
 
 char *user_table[3] = {"", SUPERUSER, USER};
+
+#define BUFSIZE 512
 
 #endif

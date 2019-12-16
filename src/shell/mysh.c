@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "mysh.h"
 #include "job.h"
@@ -26,15 +29,15 @@ int jobcnt = 0;
 struct termios mysh_tc;
 
 int user_id = 0;
-int fd_in, fd_out;
+int fd_in, fd_out, in, out;
 
 int main() {
-
-    login();
-
     jobs = NULL;
     initialize_handlers(); // register for signal handlers
     tcgetattr(STDIN_FILENO, &mysh_tc);
+
+    init();
+    login();
 
     while (true) {
 
@@ -111,12 +114,16 @@ int next_token_length(int position) {
     return length;
 }
 
-bool check_redirection(int start, int end) {
+bool check_redirection(int start, int end, bool background) {
     argc = 0;
     args = malloc(sizeof(char *));
     args[0] = "";
     fd_in = FAILURE, fd_out = FAILURE;
     for (int i = start; i <= end; i++) {
+        if ((tokens[i][0] == '<' || tokens[i][0] == '>') && background) {
+            fprintf(stderr, "Redirection for background jobs is not supported\n");
+            return false;
+        }
         if (tokens[i][0] == '<') {
             i++;
             if (i > end) {
@@ -189,11 +196,11 @@ void eval() {
                 } else {
                     end_pos = i - 1;
                 }
-                launch = check_redirection(start_pos, end_pos);
+                launch = check_redirection(start_pos, end_pos, background);
                 if (strcmp(args[0], "jobs") == 0) {
                     print = false;
                 }
-                if (launch) launch_process(background);
+                if (launch) launch_process(background, fd_in != FAILURE, fd_out != FAILURE);
                 free(args);
                 args = NULL;
             }
@@ -202,9 +209,45 @@ void eval() {
     }
 }
 
-void launch_process(bool background) {
+void redirection_pre_launch() {
+    if (fd_in != FAILURE) {
+        in = open("in", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+        char buffer[BUFSIZE];
+        size_t n;
+        while ((n = f_read(fd_in, buffer, BUFSIZE)) > 0) {
+            write(in, buffer, n);
+        }
+        f_close(fd_in);
+        close(in);
+        in = open("in", O_RDONLY);
+    }
+    if (fd_out != FAILURE) {
+        out = open("out", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+    }
+}
+
+void redirection_post_launch() {
+    if (fd_in != FAILURE) {
+        close(in);
+    }
+    if (fd_out != FAILURE) {
+        close(out);
+        out = open("out", O_RDONLY);
+        char buffer[BUFSIZE];
+        size_t n;
+        while ((n = read(out, buffer, BUFSIZE)) > 0) {
+            f_write(fd_out, buffer, n);
+        }
+        f_close(fd_out);
+        close(out);
+    }
+}
+
+void launch_process(bool background, bool redirect_in, bool redirect_out) {
     int i, status, jid;
     pid_t pid;
+
+    redirection_pre_launch();
 
     pid = fork();
 
@@ -214,9 +257,22 @@ void launch_process(bool background) {
         }
         setpgrp();
 
+        if (redirect_in || redirect_out) {
+            signal(SIGTSTP, SIG_IGN);
+        }
+        if (redirect_in) {
+            dup2(in, STDIN_FILENO);
+            close(in);
+        }
+        if (redirect_out) {
+            dup2(out, STDOUT_FILENO);
+            close(out);
+        }
+
         if (builtin(args, argc) == true) {
             free_list();
             free_tokens();
+            term();
             exit(EXIT_SUCCESS);
         }
 
@@ -228,6 +284,7 @@ void launch_process(bool background) {
             }
             free_list();
             free_tokens();
+            term();
             exit(EXIT_FAILURE);
         }
 
@@ -239,6 +296,9 @@ void launch_process(bool background) {
             waitpid(pid, &status, WUNTRACED);
             tcsetpgrp(STDIN_FILENO, getpgrp());
             tcsetattr(STDIN_FILENO, TCSADRAIN, &mysh_tc);
+
+            redirection_post_launch();
+
         } else {
             printf("[%d] %d\n", jid, pid);
         }
@@ -300,18 +360,16 @@ void login() {
     }
     char *user = NULL, *pwd = NULL;
     size_t a = 0, b = 0;
-    while (user_id == 0) {
-        printf("Username: ");
-        getline(&user, &a, stdin);
-        printf("Password: ");
-        getline(&pwd, &b, stdin);
-        if (strcmp(user, USER"\n") == 0 && strcmp(pwd, USER_PWD"\n") == 0) {
-            user_id = ID_USER;
-        } else if (strcmp(user, SUPERUSER"\n") == 0 && strcmp(pwd, SUPERUSER_PWD) == 0) {
-            user_id = ID_SUPERUSER;
-        } else {
-            printf("Invalid username or password.\n");
-        }
+    printf("Username: ");
+    getline(&user, &a, stdin);
+    printf("Password: ");
+    getline(&pwd, &b, stdin);
+    if (strcmp(user, USER"\n") == 0 && strcmp(pwd, USER_PWD"\n") == 0) {
+        user_id = ID_USER;
+    } else if (strcmp(user, SUPERUSER"\n") == 0 && strcmp(pwd, SUPERUSER_PWD) == 0) {
+        user_id = ID_SUPERUSER;
+    } else {
+        printf("Invalid username or password.\n");
     }
     free(user);
     free(pwd);

@@ -13,8 +13,6 @@
 #include "../fs/fs.h"
 #include "../fs/error.h"
 
-#define BUFSIZE 512
-
 struct Node* lastnode;
 char** currenttokens;
 int length;
@@ -93,6 +91,7 @@ void my_jobs(){
 void my_exit(){
     free_list();
     free_tokens();
+    term();
     printf("Goodbye~\n");
     exit(EXIT_SUCCESS);
 }
