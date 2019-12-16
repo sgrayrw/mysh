@@ -13,6 +13,8 @@
 #include "../fs/fs.h"
 #include "../fs/error.h"
 
+const char *user_table[3] = {"", SUPERUSER, USER};
+
 struct Node* lastnode;
 char** currenttokens;
 int length;
