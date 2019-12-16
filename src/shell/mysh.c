@@ -26,6 +26,7 @@ int jobcnt = 0;
 struct termios mysh_tc;
 
 int user_id = 0;
+int fd_in, fd_out;
 
 int main() {
 
@@ -96,7 +97,11 @@ int next_token_length(int position) {
     if (line[position] == '\0') {
         length = 0;
     } else if (strchr(DELIMITERS, line[position]) != NULL) {
-        length = 1;
+        if (line[position] == '>' && line[position + 1] == '>') {
+            length = 2;
+        } else {
+            length = 1;
+        }
     } else {
         while (line[position] != '\0' && strchr(DELIMITERS, line[position]) == NULL) {
             position++;
@@ -106,36 +111,89 @@ int next_token_length(int position) {
     return length;
 }
 
+bool check_redirection(int start, int end) {
+    argc = 0;
+    args = malloc(sizeof(char *));
+    args[0] = "";
+    fd_in = FAILURE, fd_out = FAILURE;
+    for (int i = start; i <= end; i++) {
+        if (tokens[i][0] == '<') {
+            i++;
+            if (i > end) {
+                fprintf(stderr, "Syntax error near unexpected token '<'\n");
+                return false;
+            } else {
+                if (fd_in != FAILURE) {
+                    f_close(fd_in);
+                }
+                fd_in = f_open(tokens[i], "r");
+                if (fd_in == FAILURE) {
+                    //TODO error handling
+                    return false;
+                }
+            }
+        } else if (tokens[i][0] == '>' && tokens[i][1] == 0) {
+            i++;
+            if (i > end) {
+                fprintf(stderr, "Syntax error near unexpected token '>'\n");
+                return false;
+            } else {
+                if (fd_out != FAILURE) {
+                    f_close(fd_out);
+                }
+                fd_out = f_open(tokens[i], "w");
+                if (fd_out == FAILURE) {
+                    //TODO error handling
+                    return false;
+                }
+            }
+        } else if (tokens[i][0] == '>' && tokens[i][1] == '>') {
+            i++;
+            if (i > end) {
+                fprintf(stderr, "Syntax error near unexpected token '>>'\n");
+                return false;
+            } else {
+                if (fd_out != FAILURE) {
+                    f_close(fd_out);
+                }
+                fd_out = f_open(tokens[i], "a");
+                if (fd_out == FAILURE) {
+                    //TODO error handling
+                    return false;
+                }
+            }
+        } else {
+            argc++;
+            args = realloc(args, sizeof(char *) * (argc + 1));
+            args[argc - 1] = tokens[i];
+            args[argc] = "";
+        }
+    }
+    return true;
+}
+
 void eval() {
     int i, start_pos = 0, end_pos;
-    bool background, is_semicolon;
+    bool background, punctuation;
     if (line == NULL) {
         return;
     }
+    bool launch;
     for (i = 0; i < tokens_len; i++) {
-        is_semicolon = strcmp(tokens[i], ";") == 0;
-        if (is_semicolon || i == tokens_len - 1) {
-            if ((i == tokens_len - 1 && !is_semicolon) || i > start_pos) {
-                if (i == tokens_len - 1 && !is_semicolon){
+        background = tokens[i][0] == '&';
+        punctuation = tokens[i][0] == ';' || background;
+        if (punctuation || i == tokens_len - 1) {
+            if ((i == tokens_len - 1 && !punctuation) || i > start_pos) {
+                if (i == tokens_len - 1 && !punctuation){
                     end_pos = i;
                 } else {
                     end_pos = i - 1;
                 }
-                argc = end_pos - start_pos + 1;
-                args = malloc(sizeof(char *) * (argc + 1));
-                memcpy(args, &tokens[start_pos], sizeof(char *) * argc);
-                args[argc] = NULL;
-                if (strcmp(args[argc - 1], "&") == 0) {
-                    argc--;
-                    args[argc] = NULL;
-                    background = true;
-                } else {
-                    background = false;
-                }
+                launch = check_redirection(start_pos, end_pos);
                 if (strcmp(args[0], "jobs") == 0) {
                     print = false;
                 }
-                launch_process(background);
+                if (launch) launch_process(background);
                 free(args);
                 args = NULL;
             }

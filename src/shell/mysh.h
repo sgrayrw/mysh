@@ -1,7 +1,7 @@
 #ifndef MYSH_H
 #define MYSH_H
 
-#define DELIMITERS ";& \f\n\r\t\v"
+#define DELIMITERS "<>;& \f\n\r\t\v"
 
 // main loop
 void read_line(); // read into line buffer
