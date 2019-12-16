@@ -11,7 +11,7 @@ int main() {
     f_open("/ray", "w");
     f_open("/ruikang", "w");
     f_open("/jiyu", "w");
-//    f_open("/dxu", "w");
+    f_open("/dxu", "w");
     dump();
     term();
 }

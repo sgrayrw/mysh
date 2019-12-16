@@ -8,7 +8,7 @@
 #define BLOCKSIZE 512
 #define N_INODES 128 /* max 128 inodes */
 #define N_DBLOCKS 10
-#define MAX_NAME_LEN (BLOCKSIZE / 2 - sizeof(long long) - 1)
+#define MAX_NAME_LEN (BLOCKSIZE / 2 - sizeof(long long) - sizeof(f_type) - 1)
 #define LEN_PERMISSION 4
 
 typedef enum {DIR, F, EMPTY} f_type;
