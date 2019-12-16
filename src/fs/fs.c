@@ -279,7 +279,7 @@ int f_remove(const char* pathname) {
     }
     //free file table entry
     for (int i = 0; i<MAX_OPENFILE; i++){
-        if (ft[i] == vnode){
+        if (ft[i]->vnode == vnode){
             ft[i] = NULL;
         }
     }
