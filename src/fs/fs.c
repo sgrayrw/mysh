@@ -250,31 +250,38 @@ int f_rewind(int fd) {
     return f_seek(fd, 0, SEEK_SET);
 }
 
-int f_stat(int fd, inode_t* inode) {
-    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
-        error = INVALID_FD;
+int f_stat(const char* pathname, inode_t* inode) {
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* file = tracedown(path,length);
+    if (file == NULL)
         return FAILURE;
-    }
-
-    fetch_inode(ft[fd]->vnode, inode);
+    fetch_inode(file, inode);
     return SUCCESS;
 }
 
-int f_remove(int fd) {
-    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
-        error = INVALID_FD;
+int f_remove(const char* pathname) {
+
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* vnode = tracedown(path,length);
+    if (vnode == NULL)
+        return FAILURE;
+    inode_t inode;
+    fetch_inode(vnode,&inode);
+    if (inode.uid != user_id) {
+        error = PERM_DENIED;
         return FAILURE;
     }
 
-    file_t* file = ft[fd];
-    if (file->mode == RDONLY) {
-        error = MODE_ERR;
-        return FAILURE;
-    }
-
-    vnode_t* vnode = file->vnode;
     if (vnode->type == DIR){
         return FAILURE;
+    }
+    //free file table entry
+    for (int i = 0; i<MAX_OPENFILE; i++){
+        if (ft[i] == vnode){
+            ft[i] = NULL;
+        }
     }
     //free blocks
     cleandata(vnode);
@@ -282,9 +289,7 @@ int f_remove(int fd) {
     free_inode(vnode);
     //free vnode
     free_vnode(vnode);
-    //free file table entry
-    free(ft[fd]);
-    ft[fd] = NULL;
+
     return SUCCESS;
 }
 
@@ -531,6 +536,19 @@ int f_umount(const char* target) {
     }
     free_path(path);
     free_vnode(mountpoint);
+    return SUCCESS;
+}
+
+int f_chmod(const char* pathname, char* mode){
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* vnode = tracedown(path,length);
+    if (vnode == NULL)
+        return FAILURE;
+    inode_t inode;
+    fetch_inode(vnode, &inode);
+    strcpy(inode.permission,mode);
+    update_inode(vnode,&inode);
     return SUCCESS;
 }
 
@@ -819,10 +837,12 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
 }
 
 static void cleandata(vnode_t* vnode){
-    FILE* disk = disks[vnode->disk];
     inode_t inode;
     fetch_inode(vnode,&inode);
-    long long blocknum = (inode.size-1)/BLOCKSIZE+1;
+    long long blocknum = inode.type == F ? (inode.size-1)/BLOCKSIZE+1 : (inode.size-1)/2+1;
+    if (inode.size = 0){
+        blocknum = 0;
+    }
     for (int i = 1; i<= blocknum; i++){
         long long address = get_block_address(vnode,i);
         free_block(vnode->disk, address);
@@ -1020,4 +1040,20 @@ bool has_permission(vnode_t* vnode, char mode) {
         return (inode.permission[0] == mode || inode.permission[1] == mode);
     else
         return (inode.permission[2] == mode || inode.permission[3] == mode);
+}
+
+vnode_t* tracedown(char** path,int length){
+    vnode_t* parentdir = vnodes;
+    for (int i = 0; i < length; i++){
+        parentdir = get_vnode(parentdir, path[i]);
+        if (!parentdir) {
+            error = INVALID_PATH;
+            return NULL;
+        }
+        if (parentdir->type != DIR) {
+            error = NOT_DIR;
+            return NULL;
+        }
+    }
+    return parentdir;
 }

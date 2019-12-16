@@ -36,7 +36,7 @@ ssize_t f_write(int fd, void* buf, size_t count);
 int f_seek(int fd, long offset, int whence);
 int f_rewind(int fd);
 int f_stat(const char* pathname, inode_t* inode);
-int f_remove(int fd);
+int f_remove(const char* pathname);
 int f_opendir(const char* pathname);
 int f_readdir(int fd, char** filename, inode_t* inode);
 int f_closedir(int fd);
@@ -63,8 +63,8 @@ static int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode); // n:
 static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* mode);
 static long long get_block(int n_disk);
 static long long get_inode(int n_disk);
-static void cleandata(vnode_t* vnode);
 
+static void cleandata(vnode_t* vnode);
 static void free_block(int n_disk, long long address);
 static void free_inode(vnode_t* vnode);
 static void free_vnode(vnode_t* vnode);
@@ -73,4 +73,5 @@ static long long get_block_address(vnode_t* vnode, long long block_number);
 static int get_block_index(long long block_number,int* index);
 static bool has_permission(vnode_t* vnode, char mode);
 
+static vnode_t* tracedown(char** path,int length);
 #endif
