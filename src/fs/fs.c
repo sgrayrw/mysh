@@ -64,7 +64,6 @@ int f_open(const char* pathname, const char* mode) {
                 error = PERM_DENIED;
                 return FAILURE;
             }
-            printf("start!\n");
             vnode = create_file(parentdir, path[length - 1], F, "rw--");
             if (!vnode) {
                 error = DISK_FULL;
@@ -785,10 +784,10 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     int end = 0;
     long long order = (inode->size)/2+1;
     long long address = get_block_address(parent, order);
+    printf("order:%d,address:%d\n",order,address);
     fetch_inode(parent,inode);
     inode->dir_size++;
     inode->size++;
-    fseek(fs,address+sizeof(dirent_t)*(inode->size%2),SEEK_SET);
 
     dirent_t* entry = malloc(sizeof(dirent_t));
     if ((entry->inode = get_inode(parent->disk))==FAILURE){
@@ -796,6 +795,8 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     }
     strcpy(entry->name,filename);
     entry->type = type;
+    fseek(fs,address+sizeof(dirent_t)*((inode->size-1)%2),SEEK_SET);
+    printf("%ld%s\n",ftell(fs),entry->name);
     fwrite(entry,sizeof(dirent_t),1,fs);
 
     struct timeval tv;
@@ -973,7 +974,6 @@ long long get_block_address(vnode_t* vnode, long long block_number){
     fwrite(&inode,sizeof(inode_t),1,fs);
     if (new){
         if (index[0] == 0){
-            printf("here/n");
             if ((newaddress=get_block(vnode->disk)) ==FAILURE){
                 return FAILURE;
             }
