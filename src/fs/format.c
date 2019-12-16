@@ -63,7 +63,8 @@ void format() {
     // superblock
     sb_t* sb = calloc(1, sizeof(sb_t));
     sb->block_size = BLOCKSIZE;
-    sb->inode_start = sb->free_inode = BOOTSIZE + SUPERSIZE;
+    sb->inode_start = BOOTSIZE + SUPERSIZE;
+    sb->free_inode = sb->inode_start + sizeof(inode_t);
 
     // inodes
     fseek(out, sb->inode_start, SEEK_SET);
