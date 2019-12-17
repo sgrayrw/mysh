@@ -22,4 +22,6 @@ void my_chmod();
 void my_rmdir();
 void my_umount();
 
+void error_display();
+
 #endif

@@ -135,7 +135,8 @@ bool check_redirection(int start, int end, bool background) {
                 }
                 fd_in = f_open(tokens[i], "r");
                 if (fd_in == FAILURE) {
-                    //TODO error handling
+                    fprintf(stderr, "%s: ", tokens[i]);
+                    error_display();
                     return false;
                 }
             }
@@ -150,7 +151,8 @@ bool check_redirection(int start, int end, bool background) {
                 }
                 fd_out = f_open(tokens[i], "w");
                 if (fd_out == FAILURE) {
-                    //TODO error handling
+                    fprintf(stderr, "%s: ", tokens[i]);
+                    error_display();
                     return false;
                 }
             }
@@ -165,7 +167,8 @@ bool check_redirection(int start, int end, bool background) {
                 }
                 fd_out = f_open(tokens[i], "a");
                 if (fd_out == FAILURE) {
-                    //TODO error handling
+                    fprintf(stderr, "%s: ", tokens[i]);
+                    error_display();
                     return false;
                 }
             }
@@ -200,7 +203,7 @@ void eval() {
                 if (strcmp(args[0], "jobs") == 0) {
                     print = false;
                 }
-                if (launch) launch_process(background, fd_in != FAILURE, fd_out != FAILURE);
+                if (launch) launch_process(background);
                 free(args);
                 args = NULL;
             }
@@ -209,7 +212,7 @@ void eval() {
     }
 }
 
-void redirection_pre_launch() {
+void redirection_pre_launch(int *saved_in, int *saved_out) {
     if (fd_in != FAILURE) {
         in = open("in", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
         char buffer[BUFSIZE];
@@ -224,14 +227,27 @@ void redirection_pre_launch() {
     if (fd_out != FAILURE) {
         out = open("out", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
     }
-}
 
-void redirection_post_launch() {
     if (fd_in != FAILURE) {
+        *saved_in = dup(STDIN_FILENO);
+        dup2(in, STDIN_FILENO);
         close(in);
     }
     if (fd_out != FAILURE) {
+        *saved_out = dup(STDOUT_FILENO);
+        dup2(out, STDOUT_FILENO);
         close(out);
+    }
+}
+
+void redirection_post_launch(int *saved_in, int *saved_out) {
+    if (fd_in != FAILURE) {
+        dup2(*saved_in, STDIN_FILENO);
+        close(*saved_in);
+    }
+    if (fd_out != FAILURE) {
+        dup2(*saved_out, STDOUT_FILENO);
+        close(*saved_out);
         out = open("out", O_RDONLY);
         char buffer[BUFSIZE];
         size_t n;
@@ -243,7 +259,7 @@ void redirection_post_launch() {
     }
 }
 
-void launch_process(bool background, bool redirect_in, bool redirect_out) {
+void launch_process(bool background) {
     int i, status, jid;
     pid_t pid;
 
@@ -251,19 +267,11 @@ void launch_process(bool background, bool redirect_in, bool redirect_out) {
         my_exit();
     }
 
-    redirection_pre_launch();
-
-    if (redirect_in) {
-        dup2(in, STDIN_FILENO);
-        close(in);
-    }
-    if (redirect_out) {
-        dup2(out, STDOUT_FILENO);
-        close(out);
-    }
+    int saved_in, saved_out;
+    redirection_pre_launch(&saved_in, &saved_out);
 
     if (builtin(args, argc) == true) {
-        redirection_post_launch();
+        redirection_post_launch(&saved_in, &saved_out);
         return;
     }
 
@@ -275,7 +283,7 @@ void launch_process(bool background, bool redirect_in, bool redirect_out) {
         }
         setpgrp();
 
-        if (redirect_in || redirect_out) {
+        if (fd_in != FAILURE || fd_out != FAILURE) {
             signal(SIGTSTP, SIG_IGN);
         }
 
@@ -300,7 +308,7 @@ void launch_process(bool background, bool redirect_in, bool redirect_out) {
             tcsetpgrp(STDIN_FILENO, getpgrp());
             tcsetattr(STDIN_FILENO, TCSADRAIN, &mysh_tc);
 
-            redirection_post_launch();
+            redirection_post_launch(&saved_in, &saved_out);
 
         } else {
             printf("[%d] %d\n", jid, pid);
