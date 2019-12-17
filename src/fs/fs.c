@@ -595,7 +595,8 @@ void init() {
         disks[i] = NULL;
         superblocks[i] = NULL;
     }
-    wd = NULL;
+    wd = malloc(sizeof(char) * 2);
+    wd = "/";
 }
 
 void term() {
@@ -708,7 +709,7 @@ char** split_path(const char* pathname, int* length) {
     char **tokens = malloc(sizeof(char*));
     char *token = malloc(strlen(name) + 1);
     strcpy(token, name);
-    tokens[0] == token;
+    tokens[0] = token;
     *length += 1;
     while((name = strtok(NULL, delim)) != NULL){
         *length += 1;
