@@ -40,7 +40,7 @@ int f_remove(const char* pathname);
 int f_opendir(const char* pathname);
 int f_readdir(int fd, char** filename, inode_t* inode);
 int f_closedir(int fd);
-int f_mkdir(const char* pathname, char* mode);
+int f_mkdir(const char* pathname, char* mode, bool login);
 int f_rmdir(const char* pathname);
 int f_mount(const char* source, const char* target);
 int f_umount(const char* target);

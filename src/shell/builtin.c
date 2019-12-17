@@ -520,7 +520,7 @@ void my_mkdir() {
         fprintf(stderr, "usage: mkdir <directory>...\n");
     } else {
         for (int i = 1; i < length; i++) {
-            if (f_mkdir(currenttokens[i], "rw--") == FAILURE) {
+            if (f_mkdir(currenttokens[i], "rw--", false) == FAILURE) {
                 fprintf(stderr, "mkdir: cannot create directory '%s': ", currenttokens[i]);
                 error_display();
             }

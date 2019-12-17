@@ -350,14 +350,16 @@ void login() {
     int fd;
     fd = f_opendir(USER);
     if (fd == FAILURE) {
-        f_mkdir(USER, "rw--");
+        user_id = ID_USER;
+        f_mkdir(USER, "rw--", true);
         //TODO stats, owner
     } else {
         f_closedir(fd);
     }
     fd = f_opendir(SUPERUSER);
     if (fd == FAILURE) {
-        f_mkdir(SUPERUSER, "rw--");
+        user_id = ID_SUPERUSER;
+        f_mkdir(SUPERUSER, "rw--", true);
         //TODO stats, owner
     } else {
         f_closedir(fd);

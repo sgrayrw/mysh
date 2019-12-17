@@ -3,7 +3,6 @@
 #include <string.h>
 #include <sys/time.h>
 #include <stdbool.h>
-#include <unistd.h>
 #include "error.h"
 #include "fs.h"
 #include "../shell/mysh.h"
@@ -373,7 +372,7 @@ int f_closedir(int fd) {
     return f_close(fd);
 }
 
-int f_mkdir(const char* pathname, char* mode) {
+int f_mkdir(const char* pathname, char* mode, bool login) {
     char** path;
     int length = split_path(pathname, &path);
     if (length == 0) { // `/`
@@ -393,7 +392,7 @@ int f_mkdir(const char* pathname, char* mode) {
         }
     }
 
-    if (!has_permission(parentdir, 'w')) {
+    if (!login && !has_permission(parentdir, 'w')) {
         error = PERM_DENIED;
         return FAILURE;
     }
