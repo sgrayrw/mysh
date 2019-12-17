@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     // format disk
     format();
     fclose(out);
-    printf("formatted disk: <DISK> with size %lld MB\n", disksize / MB);
+    printf("formatted disk: <%s> with size %lld MB\n", argv[1], disksize / MB);
     exit(EXIT_SUCCESS);
 }
 

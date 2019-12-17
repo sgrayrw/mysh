@@ -13,13 +13,17 @@ int main() {
     f_mkdir("/ray/hw1", "rw--", false);
     f_close(f_open("/ray/hw1/file1.txt", "w"));
     f_close(f_open("/ray/hw1/file2.txt", "w"));
+    f_mount("DISK2", "/mount");
+    f_mkdir("/mount/ruikang", "rw--", false);
+    f_mkdir("/mount/jiyu", "rw--", false);
+    f_close(f_open("/mount/jiyu/final.txt", "w"));
 
-    int dir = f_opendir("/ray/hw1");
-    inode_t inode;
-    char filename[MAX_NAME_LEN + 1];
-    printf("fd %d\n", dir);
-    while (f_readdir(dir, filename, &inode) != FAILURE)
-        printf("entry %s\n", filename);
+//    int dir = f_opendir("/ray/hw1");
+//    inode_t inode;
+//    char filename[MAX_NAME_LEN + 1];
+//    printf("fd %d\n", dir);
+//    while (f_readdir(dir, filename, &inode) != FAILURE)
+//        printf("entry %s\n", filename);
 
     dump();
     term();
