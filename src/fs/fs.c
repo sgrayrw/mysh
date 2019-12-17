@@ -669,21 +669,30 @@ int set_wd(const char* pathname) {
             return FAILURE;
         }
     }
-    free_path(path, length);
 
-    if (!wd || strlen(wd) < strlen(pathname))
-        wd = realloc(wd, strlen(pathname) + 1);
-    strcpy(wd, pathname);
+    if (wd) free(wd);
+    if (!path) {
+        wd = malloc(sizeof(char) + 1);
+        wd = "/";
+    }
+    int wd_length = 0;
+    for (int j = 0; j < length; j++) {
+        wd_length += (int) strlen(*(path + j));
+        if (j == 0) {
+            wd = malloc(sizeof(char) * wd_length);
+            strcpy(wd, *(path + j));
+        } else {
+            wd = realloc(wd, wd_length + wd_length);
+            strcat(wd, *(path + j));
+        }
+    }
+    free_path(path, length);
     return SUCCESS;
 }
 
 char** split_path(const char* pathname, int* length) {
     char* name;
     char* delim = "/";
-<<<<<<< HEAD
-    *length = 0;
-=======
-    int count = 0;
     char buf[strlen(wd) + strlen(pathname) + 2];
     if (pathname[0] == '/') {
         strcpy(buf, pathname);
@@ -692,29 +701,6 @@ char** split_path(const char* pathname, int* length) {
         buf[strlen(wd)] = '/';
         strcat(buf, pathname);
     }
-    if ((name = strtok(buf, delim)) == NULL){
-        return count;
-    }
-    *tokens = malloc(sizeof(char*));
-    **tokens = malloc(strlen(name) + 1);
-    strcpy(**tokens, name);
-    count += 1;
-    while((name = strtok(NULL, delim)) != NULL){
-        count += 1;
-        *tokens = realloc(*tokens,sizeof(char*)*count);
-        *((*tokens) + count - 1) = malloc(strlen(name) + 1);
-        strcpy(*((*tokens) + count - 1), name);
-    }
-    return count;
-}
-/*
-int split_path(const char* pathname, char*** tokens) {
-    char* name;
-    char* delim = "/";
-    int count = 0;
->>>>>>> jiyu
-    char buf[strlen(pathname + 1)];
-    strcpy(buf, pathname);
     if ((name = strtok(buf, delim)) == NULL){
         *length = 0;
         return NULL;
@@ -731,17 +717,11 @@ int split_path(const char* pathname, char*** tokens) {
     }
     return tokens;
 }
-<<<<<<< HEAD
 
 static void free_path(char** path, int length) {
     for (int i = 0; i < length; ++i)
         free(path[i]);
     free(path);
-=======
-*/
-static void free_path(char** path) {
-
->>>>>>> jiyu
 }
 
 vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
