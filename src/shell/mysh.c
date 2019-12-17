@@ -253,6 +253,20 @@ void launch_process(bool background, bool redirect_in, bool redirect_out) {
 
     redirection_pre_launch();
 
+    if (redirect_in) {
+        dup2(in, STDIN_FILENO);
+        close(in);
+    }
+    if (redirect_out) {
+        dup2(out, STDOUT_FILENO);
+        close(out);
+    }
+
+    if (builtin(args, argc) == true) {
+        redirection_post_launch();
+        return;
+    }
+
     pid = fork();
 
     if (pid == 0) { // child
@@ -263,21 +277,6 @@ void launch_process(bool background, bool redirect_in, bool redirect_out) {
 
         if (redirect_in || redirect_out) {
             signal(SIGTSTP, SIG_IGN);
-        }
-        if (redirect_in) {
-            dup2(in, STDIN_FILENO);
-            close(in);
-        }
-        if (redirect_out) {
-            dup2(out, STDOUT_FILENO);
-            close(out);
-        }
-
-        if (builtin(args, argc) == true) {
-            free_list();
-            free_tokens();
-            term();
-            exit(EXIT_SUCCESS);
         }
 
         if (execvp(args[0], args) == -1) {

@@ -674,9 +674,9 @@ int set_wd(const char* pathname) {
     }
 
     if (wd) free(wd);
-    if (!path) {
+    if (length == 0) {
         wd = malloc(sizeof(char) + 1);
-        wd = "/";
+        strcpy(wd, "/");
     }
     int wd_length = 0;
     for (int j = 0; j < length; j++) {
