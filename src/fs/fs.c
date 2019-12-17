@@ -733,7 +733,6 @@ void update_inode(vnode_t* vnode, inode_t* inode) {
 }
 
 int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
-//    printf("readdir %s entry%d\n", dir->name, n);
     inode_t dir_inode;
     fetch_inode(dir, &dir_inode);
 
@@ -742,17 +741,13 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
 
     FILE* disk = disks[dir->disk];
     long long block_number = n / 2 + 1;
-//    printf("bnumber %lld\n", block_number);
     long long block_addr = get_block_address(dir, block_number);
-//    printf("block addr %lld\n", block_addr);
     fseek(disk, block_addr + (sizeof(dirent_t) * (n % 2)), SEEK_SET);
-//    printf("pos %ld\n", ftell(disk));
     fread(dirent, sizeof(dirent_t), 1, disk);
     if (dirent->type != EMPTY) {
         fseek(disk, dirent->inode, SEEK_SET);
         fread(inode, sizeof(inode_t), 1, disk);
     }
-//    printf("name %s\n", dirent->name);
     return SUCCESS;
 }
 
@@ -802,10 +797,7 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
 
     int end = 0;
     long long order = (inode->size)/2+1;
-
-    printf("create file %s, dir size %lld order %lld\n", filename, inode->size, order);
     long long address = get_block_address(parent, order);
-    printf("block addr %lld\n", address);
 
     fetch_inode(parent,inode);
     inode->dir_size++;
@@ -818,7 +810,6 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     strcpy(entry->name,filename);
     entry->type = type;
     fseek(fs,address+sizeof(dirent_t)*((inode->size-1)%2),SEEK_SET);
-    printf("written to %ld\n", ftell(fs));
     fwrite(entry,sizeof(dirent_t),1,fs);
 
     struct timeval tv;
@@ -946,7 +937,15 @@ long long get_block_address(vnode_t* vnode, long long block_number){
     FILE* fs = disks[vnode->disk];
     inode_t inode;
     fetch_inode(vnode, &inode);
-    long long totalblock = inode.size == 0 ? 0 : (inode.size-1)/BLOCKSIZE+1;
+
+    long long totalblock;
+    if (inode.size == 0)
+        totalblock = 0;
+    else if (inode.type == F)
+        totalblock = (inode.size - 1) / BLOCKSIZE + 1;
+    else
+        totalblock = (inode.size - 1) / 2 + 1;
+
     bool new = false;
     if (block_number>totalblock){
         new = true;
