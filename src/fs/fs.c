@@ -275,12 +275,13 @@ int f_remove(const char* pathname) {
         return FAILURE;
     }
 
-    if (vnode->type == DIR){
+    if (vnode->type != F){
+        error = NOT_FILE;
         return FAILURE;
     }
     //free file table entry
     for (int i = 0; i<MAX_OPENFILE; i++){
-        if (ft[i]->vnode == vnode){
+        if (ft[i] != NULL && ft[i]->vnode == vnode){
             ft[i] = NULL;
         }
     }
@@ -413,37 +414,37 @@ int f_mkdir(const char* pathname, char* mode, bool login) {
     }
 
     //add . and  ..
-    FILE* fs = disks[vnode->disk];
-    inode_t inode;
-    fetch_inode(vnode,&inode);
-
-    long long order = 1;
-    long long address = get_block_address(vnode, order);
-
-    fetch_inode(vnode,&inode);
-    inode.dir_size+=2;
-    inode.size+=2;
-
-    dirent_t entry_self;
-    entry_self.inode = vnode->inode;
-    entry_self.type = DIR;
-    char* selfname = ".";
-    strcpy(entry_self.name,selfname);
-
-    dirent_t entry_parent;
-    entry_parent.inode = vnode->parent->inode;
-    entry_parent.type = DIR;
-    char* parentname = "..";
-    strcpy(entry_parent.name,parentname);
-
-    fseek(fs,address,SEEK_SET);
-    fwrite(&entry_self,sizeof(dirent_t),1,fs);
-    fwrite(&entry_parent,sizeof(dirent_t),1,fs);
-
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    inode.mtime = tv.tv_sec;
-    update_inode(vnode,&inode);
+//    FILE* fs = disks[vnode->disk];
+//    inode_t inode;
+//    fetch_inode(vnode,&inode);
+//
+//    long long order = 1;
+//    long long address = get_block_address(vnode, order);
+//
+//    fetch_inode(vnode,&inode);
+//    inode.dir_size+=2;
+//    inode.size+=2;
+//
+//    dirent_t entry_self;
+//    entry_self.inode = vnode->inode;
+//    entry_self.type = DIR;
+//    char* selfname = ".";
+//    strcpy(entry_self.name,selfname);
+//
+//    dirent_t entry_parent;
+//    entry_parent.inode = vnode->parent->inode;
+//    entry_parent.type = DIR;
+//    char* parentname = "..";
+//    strcpy(entry_parent.name,parentname);
+//
+//    fseek(fs,address,SEEK_SET);
+//    fwrite(&entry_self,sizeof(dirent_t),1,fs);
+//    fwrite(&entry_parent,sizeof(dirent_t),1,fs);
+//
+//    struct timeval tv;
+//    gettimeofday(&tv, NULL);
+//    inode.mtime = tv.tv_sec;
+//    update_inode(vnode,&inode);
 
 
     free_path(path, length);
@@ -466,9 +467,23 @@ int f_rmdir(const char* pathname) {
         }
     }
 
-    if (!has_permission(vnode, 'w')) {
+    inode_t inode;
+    fetch_inode(vnode,&inode);
+    if (inode.uid != user_id) {
         error = PERM_DENIED;
         return FAILURE;
+    }
+
+    if (vnode->type != DIR){
+        error = NOT_DIR;
+        return FAILURE;
+    }
+
+    //free file table entry
+    for (int i = 0; i<MAX_OPENFILE; i++){
+        if (ft[i] != NULL && ft[i]->vnode == vnode){
+            ft[i] = NULL;
+        }
     }
     //free blocks
     cleandata(vnode);
@@ -476,6 +491,8 @@ int f_rmdir(const char* pathname) {
     free_inode(vnode);
     //free vnode
     free_vnode(vnode);
+
+    free_path(path,length);
     return SUCCESS;
 }
 
@@ -777,7 +794,7 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
     inode_t inode;
     int n = 0;
     while (readdir(parentdir, n, &dirent, &inode) != FAILURE) {
-        if (dirent.type != EMPTY && strcmp(dirent.name, filename) != 0) {
+        if (dirent.type == EMPTY || strcmp(dirent.name, filename) != 0) {
             n++;
             continue;
         }
