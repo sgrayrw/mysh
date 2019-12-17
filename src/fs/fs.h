@@ -52,8 +52,8 @@ void dump(); // dump vnode tree for debugging
 int set_wd(const char* pathname);
 
 static void dump_vnode(vnode_t* vnode, int depth);
-static int split_path(const char* pathname, char*** tokens);
-static void free_path(char** path);
+static char** split_path(const char* pathname, int* length);
+static void free_path(char** path, int length);
 static vnode_t* get_vnode(vnode_t* parentdir, char* filename);
 
 static void fetch_inode(vnode_t* vnode, inode_t* inode);
