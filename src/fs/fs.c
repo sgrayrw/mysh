@@ -680,13 +680,14 @@ int set_wd(const char* pathname) {
     }
     int wd_length = 0;
     for (int j = 0; j < length; j++) {
-        wd_length += (int) strlen(*(path + j));
+        wd_length += (int) (strlen(*(path + j)) + 1);
         if (j == 0) {
-            wd = malloc(sizeof(char) * (wd_length + 2));
+            wd = malloc(sizeof(char) * (wd_length + 1));
             strcpy(wd, "/");
             strcat(wd, *(path + j));
         } else {
             wd = realloc(wd, wd_length + 1);
+            strcat(wd, "/");
             strcat(wd, *(path + j));
         }
     }
@@ -702,7 +703,10 @@ char** split_path(const char* pathname, int* length) {
         strcpy(buf, pathname);
     } else {
         strcpy(buf, wd);
-        if (strcmp(wd, "/") != 0) buf[strlen(wd)] = '/';
+        if (strcmp(wd, "/") != 0) {
+            buf[strlen(wd)] = '/';
+            buf[strlen(wd) + 1] = '\0';
+        }
         strcat(buf, pathname);
     }
     *length = 0;
