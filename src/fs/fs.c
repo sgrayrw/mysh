@@ -841,10 +841,9 @@ void update_inode(vnode_t* vnode, inode_t* inode) {
 int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
     inode_t dir_inode;
     fetch_inode(dir, &dir_inode);
-
-    if (n >= dir_inode.size)
+    if (n >= dir_inode.size) {
         return FAILURE;
-
+    }
     FILE* disk = disks[dir->disk];
     long long block_number = n / 2 + 1;
     long long block_addr = get_block_address(dir, block_number);
@@ -984,7 +983,7 @@ void free_inode(vnode_t* vnode){
         inode_t new;
         int count = 0;
         while (readdir(vnode->parent, count, &entry, &new) == SUCCESS) {
-            if (strcmp(entry.name, vnode->name) == 0) {
+            if (entry.type!=EMPTY && strcmp(entry.name, vnode->name) == 0) {
                 long long block_number = count/2+1;
                 address = get_block_address(vnode->parent,block_number);
                 entry.type = EMPTY;
