@@ -354,7 +354,6 @@ void login() {
         user_id = ID_USER;
         f_mkdir(USER, "rw--", true);
         printf("created user\n");
-        //TODO stats, owner
     } else {
         f_closedir(fd);
     }
@@ -364,7 +363,6 @@ void login() {
     if (fd == FAILURE) {
         f_mkdir(SUPERUSER, "rw--", true);
         printf("created superuser\n");
-        //TODO stats, owner
     } else {
         f_closedir(fd);
     }

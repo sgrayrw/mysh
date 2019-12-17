@@ -376,7 +376,8 @@ void my_ls() {
 
                 if (fd == FAILURE) {
                     if (f_stat(currenttokens[index], &stats) == FAILURE) {
-                        //TODO error handling
+                        fprintf(stderr, "ls: cannot access '%s': ", currenttokens[index]);
+                        error_display();
                     } else {
                         printf("%s:\n", currenttokens[index]);
                         if (mode_l) {
@@ -463,13 +464,15 @@ void my_chmod() {
             for (int i = 2; i < length; i++) {
                 inode_t stats;
                 if (f_stat(currenttokens[i], &stats) == FAILURE) {
-                    //TODO error handling
+                    fprintf(stderr, "chmod: cannot access '%s': ", currenttokens[i]);
+                    error_display();
                 } else if (user_id != ID_SUPERUSER && stats.uid != user_id){
                     fprintf(stderr, "chmod: '%s': permission denied\n", currenttokens[i]);
                 } else {
                     if (mode == Absolute) {
                         if (f_chmod(currenttokens[i], permission_new) == FAILURE) {
-                            //TODO error handling
+                            fprintf(stderr, "chmod: cannot access '%s': ", currenttokens[i]);
+                            error_display();
                         }
                     } else {
                         if (currenttokens[1][0] != '0') {
@@ -505,7 +508,8 @@ void my_chmod() {
                             }
                         }
                         if (f_chmod(currenttokens[i], stats.permission) == FAILURE) {
-                            //TODO error handling
+                            fprintf(stderr, "chmod: cannot access '%s': ", currenttokens[i]);
+                            error_display();
                         }
                     }
                 }
@@ -638,7 +642,8 @@ void my_rm() {
     } else {
         for (int i = 1; i < length; i++) {
             if (f_remove(currenttokens[i]) == FAILURE) {
-                //TODO error handling
+                fprintf(stderr, "rm: cannot remove '%s': ", currenttokens[i]);
+                error_display();
             }
         }
     }
@@ -673,7 +678,8 @@ void my_umount() {
     } else {
         for (int i = 1; i < length; i++) {
             if (f_umount(currenttokens[i]) == FAILURE) {
-                //TODO error handling
+                fprintf(stderr, "umount: %s: ", currenttokens[i]);
+                error_display();
             }
         }
     }
