@@ -155,9 +155,7 @@ ssize_t f_read(int fd, void* buf, size_t count) {
         preoffset = order == startbl ? file->position % BLOCKSIZE : 0;
         postoffset = order == endbl ? BLOCKSIZE-(endposition%BLOCKSIZE+1) :0;
         fseek(disk,address+preoffset,SEEK_SET);
-        printf("reading from %ld\n", ftell(disk));
         fread(buf,BLOCKSIZE-preoffset-postoffset,1,disk);
-        printf("read %s\n", buf);
         buf += BLOCKSIZE-preoffset-postoffset;
     }
 
@@ -211,7 +209,6 @@ ssize_t f_write(int fd, void* buf, size_t count) {
         preoffset = order == startbl ? file->position % BLOCKSIZE : 0;
         postoffset = order == endbl ? BLOCKSIZE-(endposition%BLOCKSIZE+1) : 0;
         fseek(disk,address+preoffset,SEEK_SET);
-        printf("writing %s to %ld\n", buf, ftell(disk));
         fwrite(buf,BLOCKSIZE-preoffset-postoffset,1,disk);
         buf += BLOCKSIZE-preoffset-postoffset;
         size+=BLOCKSIZE-preoffset-postoffset;
@@ -751,7 +748,7 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
         fseek(disk, dirent->inode, SEEK_SET);
         fread(inode, sizeof(inode_t), 1, disk);
     }
-//    printf("readdir %s inode type %d dir type %d\n", dirent->name, inode->type, dirent->type);
+    printf("readdir: entry %s has inode type %d, dir type %d\n", dirent->name, inode->type, dirent->type);
     return SUCCESS;
 }
 
