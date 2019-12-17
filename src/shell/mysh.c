@@ -173,7 +173,7 @@ bool check_redirection(int start, int end, bool background) {
             argc++;
             args = realloc(args, sizeof(char *) * (argc + 1));
             args[argc - 1] = tokens[i];
-            args[argc] = "";
+            args[argc] = NULL;
         }
     }
     return true;
