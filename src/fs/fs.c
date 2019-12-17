@@ -15,8 +15,8 @@ static sb_t* superblocks[MAX_DISKS]; // superblock for each disk
 static file_t* ft[MAX_OPENFILE]; // open file table
 
 int f_open(const char* pathname, const char* mode) {
-    char** path;
-    int length = split_path(pathname, &path);
+    int length;
+    char** path = split_path(pathname, &length);
     if (length == 0) { // `/`
         error = TARGET_EXISTS;
         return FAILURE;
@@ -109,7 +109,7 @@ int f_open(const char* pathname, const char* mode) {
         return FAILURE;
     }
 
-    free_path(path);
+    free_path(path, length);
     return fd;
 }
 
@@ -251,20 +251,20 @@ int f_rewind(int fd) {
 }
 
 int f_stat(const char* pathname, inode_t* inode) {
-    char** path;
-    int length = split_path(pathname, &path);
+    int length;
+    char** path = split_path(pathname, &length);
     vnode_t* file = tracedown(path,length);
     if (file == NULL)
         return FAILURE;
     fetch_inode(file, inode);
-    free_path(path);
+    free_path(path,length);
     return SUCCESS;
 }
 
 int f_remove(const char* pathname) {
 
-    char** path;
-    int length = split_path(pathname, &path);
+    int length;
+    char** path = split_path(pathname, &length);
     vnode_t* vnode = tracedown(path,length);
     if (vnode == NULL)
         return FAILURE;
@@ -291,13 +291,13 @@ int f_remove(const char* pathname) {
     //free vnode
     free_vnode(vnode);
 
-    free_path(path);
+    free_path(path,length);
     return SUCCESS;
 }
 
 int f_opendir(const char* pathname) {
-    char** path;
-    int length = split_path(pathname, &path);
+    int length;
+    char** path = split_path(pathname, &length);
     vnode_t* vnode = vnodes;
     for (int i = 0; i < length; i++){
         vnode = get_vnode(vnode, path[i]);
@@ -341,7 +341,7 @@ int f_opendir(const char* pathname) {
         return FAILURE;
     }
 
-    free_path(path);
+    free_path(path, length);
     return fd;
 }
 
@@ -375,8 +375,8 @@ int f_closedir(int fd) {
 }
 
 int f_mkdir(const char* pathname, char* mode, bool login) {
-    char** path;
-    int length = split_path(pathname, &path);
+    int length;
+    char** path = split_path(pathname, &length);
     if (length == 0) { // `/`
         error = TARGET_EXISTS;
         return FAILURE;
@@ -443,13 +443,14 @@ int f_mkdir(const char* pathname, char* mode, bool login) {
     inode.mtime = tv.tv_sec;
     update_inode(vnode,&inode);
 
-    free_path(path);
+
+    free_path(path, length);
     return SUCCESS;
 }
 
 int f_rmdir(const char* pathname) {
-    char** path;
-    int length = split_path(pathname, &path);
+    int length;
+    char** path = split_path(pathname, &length);
     vnode_t* vnode = vnodes;
     for (int i = 0; i < length; i++){
         vnode = get_vnode(vnode, path[i]);
@@ -478,8 +479,8 @@ int f_rmdir(const char* pathname) {
 
 int f_mount(const char* source, const char* target) {
     // check target mount point
-    char** path;
-    int length = split_path(target, &path);
+    int length;
+    char** path = split_path(target, &length);
     vnode_t* parentdir = vnodes;
     for (int i = 0; i < length - 1; ++i) {
         parentdir = get_vnode(parentdir, path[i]);
@@ -549,14 +550,14 @@ int f_mount(const char* source, const char* target) {
         }
     }
 
-    free_path(path);
+    free_path(path, length);
     return SUCCESS;
 }
 
 int f_umount(const char* target) {
     // check target mount point
-    char** path;
-    int length = split_path(target, &path);
+    int length;
+    char** path = split_path(target, &length);
     vnode_t* mountpoint = vnodes;
     for (int i = 0; i < length; ++i) {
         mountpoint = get_vnode(mountpoint, path[i]);
@@ -569,14 +570,14 @@ int f_umount(const char* target) {
             return FAILURE;
         }
     }
-    free_path(path);
+    free_path(path, length);
     free_vnode(mountpoint);
     return SUCCESS;
 }
 
 int f_chmod(const char* pathname, char* mode){
-    char** path;
-    int length = split_path(pathname, &path);
+    int length;
+    char** path = split_path(pathname, &length);
     vnode_t* vnode = tracedown(path,length);
     if (vnode == NULL)
         return FAILURE;
@@ -584,7 +585,7 @@ int f_chmod(const char* pathname, char* mode){
     fetch_inode(vnode, &inode);
     strcpy(inode.permission,mode);
     update_inode(vnode,&inode);
-    free_path(path);
+    free_path(path,length);
     return SUCCESS;
 }
 
@@ -600,7 +601,7 @@ void init() {
 void term() {
     free_vnode(vnodes);
     for (int i = 0; i < MAX_DISKS; ++i) {
-        if (disks[i]){
+        if (disks[i]) {
             fclose(disks[i]);
             free(superblocks[i]);
         }
@@ -654,8 +655,8 @@ void dump_vnode(vnode_t* vnode, int depth) {
 
 int set_wd(const char* pathname) {
     // check target mount point
-    char** path;
-    int length = split_path(pathname, &path);
+    int length;
+    char** path = split_path(pathname, &length);
     vnode_t* dest = vnodes;
     for (int i = 0; i < length; ++i) {
         dest = get_vnode(dest, path[i]);
@@ -668,38 +669,41 @@ int set_wd(const char* pathname) {
             return FAILURE;
         }
     }
-    free_path(path);
+    free_path(path, length);
 
-    if (!wd || strlen(wd) < strlen(dest->name))
-        wd = realloc(wd, strlen(dest->name) + 1);
-    strcpy(wd, dest->name);
+    if (!wd || strlen(wd) < strlen(pathname))
+        wd = realloc(wd, strlen(pathname) + 1);
+    strcpy(wd, pathname);
     return SUCCESS;
 }
 
-int split_path(const char* pathname, char*** tokens) {
+char** split_path(const char* pathname, int* length) {
     char* name;
     char* delim = "/";
-    int count = 0;
+    *length = 0;
     char buf[strlen(pathname + 1)];
     strcpy(buf, pathname);
     if ((name = strtok(buf, delim)) == NULL){
-        return count;
+        *length = 0;
+        return NULL;
     }
-    *tokens = malloc(sizeof(char*));
-    **tokens = malloc(strlen(name) + 1);
-    strcpy(**tokens, name);
-    count += 1;
+    char** tokens = malloc(sizeof(char*));
+    *tokens = malloc(strlen(name) + 1);
+    strcpy(*tokens, name);
+    *length += 1;
     while((name = strtok(NULL, delim)) != NULL){
-        count += 1;
-        *tokens = realloc(*tokens,sizeof(char*)*count);
-        *((*tokens) + count - 1) = malloc(strlen(name) + 1);
-        strcpy(*((*tokens) + count - 1), name);
+        *length += 1;
+        *tokens = realloc(*tokens,sizeof(char*) * *length);
+        tokens[*length - 1] = malloc(strlen(name) + 1);
+        strcpy(tokens[*length - 1], name);
     }
-    return count;
+    return tokens;
 }
 
-static void free_path(char** path) {
-
+static void free_path(char** path, int length) {
+    for (int i = 0; i < length; ++i)
+        free(path[i]);
+    free(path);
 }
 
 vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
@@ -871,7 +875,7 @@ static void cleandata(vnode_t* vnode){
     inode_t inode;
     fetch_inode(vnode,&inode);
     long long blocknum = inode.type == F ? (inode.size-1)/BLOCKSIZE+1 : (inode.size-1)/2+1;
-    if (inode.size = 0){
+    if (inode.size == 0){
         blocknum = 0;
     }
     for (int i = 1; i<= blocknum; i++){
@@ -916,7 +920,7 @@ void free_inode(vnode_t* vnode){
         while (readdir(vnode->parent, count, &entry, &new) == SUCCESS) {
             if (strcmp(entry.name, vnode->name) == 0) {
                 long long block_number = count/2+1;
-                long long address = get_block_address(vnode->parent,block_number);
+                address = get_block_address(vnode->parent,block_number);
                 entry.type = EMPTY;
                 fseek(disk,address+sizeof(dirent_t)*(count%2),SEEK_SET);
                 fwrite(&entry,sizeof(dirent_t),1,disk);
@@ -966,6 +970,7 @@ int get_block_index(long long block_number, int* index){
             }
         }
     }
+    return SUCCESS;
 }
 
 long long get_block_address(vnode_t* vnode, long long block_number){
@@ -990,8 +995,8 @@ long long get_block_address(vnode_t* vnode, long long block_number){
         return FAILURE;
     }
 
-    long long address;
-    long long newaddress;
+    long long address = 0;
+    long long newaddress = 0;
     if (index[0] == 1){
         if (index[5] == 0 && new){
             if ((newaddress = get_block(vnode->disk)==FAILURE)){
