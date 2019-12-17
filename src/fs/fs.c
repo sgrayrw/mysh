@@ -701,7 +701,7 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
         newchild->inode = dirent.inode;
         newchild->disk = parentdir->disk;
         strcpy(newchild->name, dirent.name);
-        newchild->type = inode.type;
+        newchild->type = dirent.type;
         newchild->parent = parentdir;
         newchild->children = NULL;
 
@@ -751,6 +751,7 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
         fseek(disk, dirent->inode, SEEK_SET);
         fread(inode, sizeof(inode_t), 1, disk);
     }
+    printf("readdir %s inode type %d dir type %d\n", dirent->name, inode->type, dirent->type);
     return SUCCESS;
 }
 
