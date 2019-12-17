@@ -347,23 +347,28 @@ void login() {
         printf("Failed to detect DISK. Please run the format program to make one.\n");
         exit(EXIT_SUCCESS);
     }
-    int fd;
-    fd = f_opendir(USER);
+
+    user_id = ID_SUPERUSER;
+    int fd = f_opendir(USER);
     if (fd == FAILURE) {
         user_id = ID_USER;
         f_mkdir(USER, "rw--", true);
+        printf("created user\n");
         //TODO stats, owner
     } else {
         f_closedir(fd);
     }
+
+    user_id = ID_SUPERUSER;
     fd = f_opendir(SUPERUSER);
     if (fd == FAILURE) {
-        user_id = ID_SUPERUSER;
         f_mkdir(SUPERUSER, "rw--", true);
+        printf("created superuser\n");
         //TODO stats, owner
     } else {
         f_closedir(fd);
     }
+
     char *user = NULL, *pwd = NULL;
     size_t a = 0, b = 0;
     printf("Username: ");

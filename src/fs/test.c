@@ -11,7 +11,7 @@ int main() {
     int f = f_open("/file", "w");
     f_close(f);
 
-    f_mkdir("/dir", "rw--");
+    f_mkdir("/dir", "rw--", false);
     f = f_opendir("/dir");
     f_closedir(f);
 
