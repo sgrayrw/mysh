@@ -8,27 +8,18 @@ int user_id = ID_SUPERUSER;
 int main() {
     init();
     f_mount("DISK", "/");
-    set_wd("/");
-    int f = f_open("/file", "w");
-    f_close(f);
-//
-//    f_mkdir("/dir", "rw--", false);
-//    f = f_opendir("/dir");
-//    f_closedir(f);
-//    f = f_open("/dir/tests", "w");
-//    char* buffer = "abcdefg";
-//    int fee = f_write(f,(void*)buffer,5);
-//    printf("%d\n",fee);
-//    f_close(f);
-//    f = f_open("/dir/tests", "r");
-//    fee = f_seek(f,2,SEEK_SET);
-//    char* buffer2[10];
-//    printf("%d,error:%d\n",fee,error);
-//    fee = f_read(f,(void*)buffer2,4);
-//    buffer2[7] = "\0";
-//    printf("%d,error:%d\n",fee,error);
-//    printf("%s\n",buffer2);
-//    f_close(f);
+    f_mkdir("ray", "rw--", false);
+    f_mkdir("dxu", "rw--", false);
+    f_mkdir("/ray/hw1", "rw--", false);
+    f_close(f_open("/ray/hw1/file1.txt", "w"));
+    f_close(f_open("/ray/hw1/file2.txt", "w"));
+
+    int dir = f_opendir("/ray/hw1");
+    inode_t inode;
+    char filename[MAX_NAME_LEN + 1];
+    printf("fd %d\n", dir);
+    while (f_readdir(dir, filename, &inode) != FAILURE)
+        printf("entry %s\n", filename);
 
     dump();
     term();

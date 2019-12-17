@@ -311,10 +311,11 @@ void error_display() {
 }
 
 void ls_directory(int fd, bool mode_F, bool mode_l) {
-    char indicator, *filename;
+    char indicator;
+    char filename[MAX_NAME_LEN + 1];
     inode_t stats;
     bool need_to_append_newline = false;
-    while (f_readdir(fd, &filename, &stats) == SUCCESS) {
+    while (f_readdir(fd, filename, &stats) == SUCCESS) {
         if (stats.type == EMPTY) {
             continue;
         }

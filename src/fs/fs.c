@@ -345,7 +345,7 @@ int f_opendir(const char* pathname) {
     return fd;
 }
 
-int f_readdir(int fd, char** filename, inode_t* inode) {
+int f_readdir(int fd, char* filename, inode_t* inode) {
     if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
         error = INVALID_FD;
         return FAILURE;
@@ -358,11 +358,13 @@ int f_readdir(int fd, char** filename, inode_t* inode) {
     }
 
     dirent_t dirent;
-    if (readdir(file->vnode, file->position++, &dirent, inode) == FAILURE)
-        return F_EOF;
+    if (readdir(file->vnode, file->position++, &dirent, inode) == FAILURE) {
+        error = F_EOF;
+        return FAILURE;
+    }
 
     if (dirent.type != EMPTY) {
-        *filename = dirent.name;
+        strcpy(filename, dirent.name);
         inode->size = inode->dir_size;
     } else {
         inode->type = EMPTY;
@@ -607,7 +609,7 @@ void term() {
             free(superblocks[i]);
         }
     }
-    free(wd);
+//    free(wd);
 }
 
 void free_vnode(vnode_t* vnode) {
