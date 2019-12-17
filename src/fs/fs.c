@@ -159,8 +159,9 @@ ssize_t f_read(int fd, void* buf, size_t count) {
         buf += BLOCKSIZE-preoffset-postoffset;
     }
 
+    size_t readsize = endposition-file->position+1;
     file->position = endposition+1;
-    return endposition-file->position+1;
+    return readsize;
 }
 
 ssize_t f_write(int fd, void* buf, size_t count) {
@@ -214,8 +215,8 @@ ssize_t f_write(int fd, void* buf, size_t count) {
         size+=BLOCKSIZE-preoffset-postoffset;
     }
 
-    file->position = endposition+1;
     ssize_t ret = endposition-file->position+1;
+    file->position = endposition+1;
 
     fetch_inode(file->vnode,&inode);
     inode.size = size;
