@@ -365,8 +365,13 @@ void my_ls() {
 
     if (no_arguments) {
         fd = f_opendir(wd);
-        ls_directory(fd, mode_F, mode_l);
-        f_closedir(fd);
+        if (fd == FAILURE) {
+            fprintf(stderr, "ls: cannot open '.': ");
+            error_display();
+        } else {
+            ls_directory(fd, mode_F, mode_l);
+            f_closedir(fd);
+        }
 
     } else {
         bool first_argument = true;
