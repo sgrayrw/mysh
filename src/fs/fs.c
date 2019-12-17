@@ -325,7 +325,7 @@ int f_opendir(const char* pathname) {
 
     // add to open file table
     file_t* dir = malloc(sizeof(file_t));
-    dir->position = 2; // go past `.` and `..`
+    dir->position = 0; // go past `.` and `..`
     dir->vnode = vnode;
     dir->mode = fmode;
     int fd = -1;

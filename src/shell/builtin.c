@@ -340,7 +340,7 @@ void my_ls() {
     bool mode_F = false, mode_l = false, no_arguments = true;
     int index;
     for (index = 1; index < length; index++) {
-        if (currenttokens[index][0] == '_' && strlen(currenttokens[index]) > 1) {
+        if (currenttokens[index][0] == '-' && strlen(currenttokens[index]) > 1) {
             for (int i = 1; i < (int) strlen(currenttokens[index]); i++) {
                 if (currenttokens[index][i] == 'F') {
                     mode_F = true;
@@ -367,7 +367,7 @@ void my_ls() {
         bool first_argument = true;
         inode_t stats;
         for (index = 1; index < length; index++) {
-            if (strlen(currenttokens[index]) == 1 || currenttokens[index][0] != '_') {
+            if (strlen(currenttokens[index]) == 1 || currenttokens[index][0] != '-') {
 
                 if (!first_argument) {
                     printf("\n");
