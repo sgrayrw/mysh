@@ -700,7 +700,7 @@ char** split_path(const char* pathname, int* length) {
         strcpy(buf, pathname);
     } else {
         strcpy(buf, wd);
-        buf[strlen(wd)] = '/';
+        if (strcmp(wd, "/") != 0) buf[strlen(wd)] = '/';
         strcat(buf, pathname);
     }
     *length = 0;
