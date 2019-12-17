@@ -30,9 +30,6 @@ int builtin(char** neededtokens, int argclength){
         if (strcmp(currenttokens[0],"jobs")==0){
             my_jobs();
             return true;
-        } else if (strcmp(currenttokens[0],"exit")==0) {
-            my_exit();
-            return true;
         } else if (strcmp(currenttokens[0],"kill")==0) {
             my_kill();
             return true;
@@ -281,18 +278,6 @@ int getlastnode_sus(){
 /****************************
 
 hw7 built-ins
-
-note to group:
-    1. mount table and n_disks
-    2. relative path for mount
-    3. change built-in logic (fork)
-    4. file table stdin stdout stderr reserved
-    5. permission:
-        ownership: user and others (2 digits, one for user and one for others)
-        permission: for each ownership, permission is a 2-bit binary sequence (rw), equivalent to an integer ranging from 0 - 3
-                    for example, 1110 is read only for others and read and write for the owner
-    6. time
-
 
 ****************************/
 

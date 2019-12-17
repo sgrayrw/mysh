@@ -247,6 +247,10 @@ void launch_process(bool background, bool redirect_in, bool redirect_out) {
     int i, status, jid;
     pid_t pid;
 
+    if (strcmp(args[0], "exit") == 0) {
+        my_exit();
+    }
+
     redirection_pre_launch();
 
     pid = fork();
@@ -370,6 +374,8 @@ void login() {
         user_id = ID_SUPERUSER;
     } else {
         printf("Invalid username or password.\n");
+        term();
+        exit(EXIT_SUCCESS);
     }
     free(user);
     free(pwd);
