@@ -680,11 +680,11 @@ int set_wd(const char* pathname) {
     for (int j = 0; j < length; j++) {
         wd_length += (int) strlen(*(path + j));
         if (j == 0) {
-            wd = malloc(sizeof(char) * (wd_length + 1));
+            wd = malloc(sizeof(char) * (wd_length + 2));
             strcpy(wd, "/");
             strcat(wd, *(path + j));
         } else {
-            wd = realloc(wd, wd_length + wd_length);
+            wd = realloc(wd, wd_length + 1);
             strcat(wd, *(path + j));
         }
     }
