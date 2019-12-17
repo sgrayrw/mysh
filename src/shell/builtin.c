@@ -324,8 +324,13 @@ void ls_directory(int fd, bool mode_F, bool mode_l) {
             indicator = '/';
         }
         if (mode_l) {
+            if (stats.type == DIR) {
+                printf("d");
+            } else {
+                printf("-");
+            }
             printf("%c%c%c%c", stats.permission[0], stats.permission[1], stats.permission[2], stats.permission[3]);
-            printf("\t%s\t%lld\t%s\t%s%c\n", user_table[stats.uid], stats.size, ctime(&stats.mtime), filename, indicator);
+            printf("\t%-8s\t%lld\t%.24s\t%s%c\n", user_table[stats.uid], stats.size, ctime(&stats.mtime), filename, indicator);
         } else {
             printf("%s%c\t", filename, indicator);
             need_to_append_newline = true;
@@ -382,8 +387,9 @@ void my_ls() {
                     } else {
                         printf("%s:\n", currenttokens[index]);
                         if (mode_l) {
+                            printf("-");
                             printf("%c%c%c%c", stats.permission[0], stats.permission[1], stats.permission[2], stats.permission[3]);
-                            printf("\t%s\t%lld\t%s\t%s\n", user_table[stats.uid], stats.size, ctime(&stats.mtime), currenttokens[index]);
+                            printf("\t%-8s\t%lld\t%.24s\t%s\n", user_table[stats.uid], stats.size, ctime(&stats.mtime), currenttokens[index]);
                         } else {
                             printf("%s\n", currenttokens[index]);
                         }

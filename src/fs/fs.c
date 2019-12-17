@@ -735,7 +735,8 @@ char** split_path(const char* pathname, int* length) {
         } else if (*length == 0) {
             token = malloc(strlen(name) + 1);
             strcpy(token, name);
-            tokens[0] = token;
+            tokens =realloc(tokens, sizeof(char*));
+            *tokens = token;
             *length = 1;
         } else {
             *length += 1;

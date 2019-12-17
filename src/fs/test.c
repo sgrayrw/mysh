@@ -77,7 +77,7 @@ int main() {
         fprintf(stderr, "f_mkdir(\"dxu\", \"rw--\", false) == FAILURE\n");
         return 0;
     }
-    if (set_wd("ray") == FAILURE) {
+    if (set_wd("ray/../ray/./") == FAILURE) {
         fprintf(stderr, "set_wd(\"ray\") == FAILURE\n");
         return 0;
     }
