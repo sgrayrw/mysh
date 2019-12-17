@@ -15,8 +15,8 @@ int main() {
 
     f = f_open("/ray", "r");
     char str2[6];
-    f_read(f, str2, 5);
     str2[5] = '\0';
+    f_read(f, str2, 5);
     printf("%s\n", str2);
 
     dump();
