@@ -155,7 +155,9 @@ ssize_t f_read(int fd, void* buf, size_t count) {
         preoffset = order == startbl ? file->position % BLOCKSIZE : 0;
         postoffset = order == endbl ? BLOCKSIZE-(endposition%BLOCKSIZE+1) :0;
         fseek(disk,address+preoffset,SEEK_SET);
+        printf("reading from %ld\n", ftell(disk));
         fread(buf,BLOCKSIZE-preoffset-postoffset,1,disk);
+        printf("read %s\n", buf);
         buf += BLOCKSIZE-preoffset-postoffset;
     }
 
@@ -209,6 +211,7 @@ ssize_t f_write(int fd, void* buf, size_t count) {
         preoffset = order == startbl ? file->position % BLOCKSIZE : 0;
         postoffset = order == endbl ? BLOCKSIZE-(endposition%BLOCKSIZE+1) : 0;
         fseek(disk,address+preoffset,SEEK_SET);
+        printf("writing %s to %ld\n", buf, ftell(disk));
         fwrite(buf,BLOCKSIZE-preoffset-postoffset,1,disk);
         buf += BLOCKSIZE-preoffset-postoffset;
         size+=BLOCKSIZE-preoffset-postoffset;
@@ -250,31 +253,38 @@ int f_rewind(int fd) {
     return f_seek(fd, 0, SEEK_SET);
 }
 
-int f_stat(int fd, inode_t* inode) {
-    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
-        error = INVALID_FD;
+int f_stat(const char* pathname, inode_t* inode) {
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* file = tracedown(path,length);
+    if (file == NULL)
         return FAILURE;
-    }
-
-    fetch_inode(ft[fd]->vnode, inode);
+    fetch_inode(file, inode);
     return SUCCESS;
 }
 
-int f_remove(int fd) {
-    if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
-        error = INVALID_FD;
+int f_remove(const char* pathname) {
+
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* vnode = tracedown(path,length);
+    if (vnode == NULL)
+        return FAILURE;
+    inode_t inode;
+    fetch_inode(vnode,&inode);
+    if (inode.uid != user_id) {
+        error = PERM_DENIED;
         return FAILURE;
     }
 
-    file_t* file = ft[fd];
-    if (file->mode == RDONLY) {
-        error = MODE_ERR;
-        return FAILURE;
-    }
-
-    vnode_t* vnode = file->vnode;
     if (vnode->type == DIR){
         return FAILURE;
+    }
+    //free file table entry
+    for (int i = 0; i<MAX_OPENFILE; i++){
+        if (ft[i]->vnode == vnode){
+            ft[i] = NULL;
+        }
     }
     //free blocks
     cleandata(vnode);
@@ -282,9 +292,7 @@ int f_remove(int fd) {
     free_inode(vnode);
     //free vnode
     free_vnode(vnode);
-    //free file table entry
-    free(ft[fd]);
-    ft[fd] = NULL;
+
     return SUCCESS;
 }
 
@@ -534,6 +542,19 @@ int f_umount(const char* target) {
     return SUCCESS;
 }
 
+int f_chmod(const char* pathname, char* mode){
+    char** path;
+    int length = split_path(pathname, &path);
+    vnode_t* vnode = tracedown(path,length);
+    if (vnode == NULL)
+        return FAILURE;
+    inode_t inode;
+    fetch_inode(vnode, &inode);
+    strcpy(inode.permission,mode);
+    update_inode(vnode,&inode);
+    return SUCCESS;
+}
+
 void init() {
     vnodes = NULL;
     for (int i = 0; i < MAX_DISKS; ++i) {
@@ -680,7 +701,7 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
         newchild->inode = dirent.inode;
         newchild->disk = parentdir->disk;
         strcpy(newchild->name, dirent.name);
-        newchild->type = inode.type;
+        newchild->type = dirent.type;
         newchild->parent = parentdir;
         newchild->children = NULL;
 
@@ -723,17 +744,14 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
 
     FILE* disk = disks[dir->disk];
     long long block_number = n / 2 + 1;
-    printf("size %lld\n", dir_inode.size);
     long long block_addr = get_block_address(dir, block_number);
-    printf("size %lld\n", dir_inode.size);
-    printf("block_addr%d\n",block_addr);
-    fseek(disk, block_addr + (BLOCKSIZE * (n % 2)), SEEK_SET);
+    fseek(disk, block_addr + (sizeof(dirent_t) * (n % 2)), SEEK_SET);
     fread(dirent, sizeof(dirent_t), 1, disk);
     if (dirent->type != EMPTY) {
         fseek(disk, dirent->inode, SEEK_SET);
         fread(inode, sizeof(inode_t), 1, disk);
     }
-    printf("%d %s\n", n, dirent->name);
+    printf("readdir %s inode type %d dir type %d\n", dirent->name, inode->type, dirent->type);
     return SUCCESS;
 }
 
@@ -784,7 +802,7 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     int end = 0;
     long long order = (inode->size)/2+1;
     long long address = get_block_address(parent, order);
-    printf("order:%d,address:%d\n",order,address);
+
     fetch_inode(parent,inode);
     inode->dir_size++;
     inode->size++;
@@ -796,7 +814,6 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     strcpy(entry->name,filename);
     entry->type = type;
     fseek(fs,address+sizeof(dirent_t)*((inode->size-1)%2),SEEK_SET);
-    printf("%ld%s\n",ftell(fs),entry->name);
     fwrite(entry,sizeof(dirent_t),1,fs);
 
     struct timeval tv;
@@ -816,13 +833,16 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
 
     free(inode);
     free(entry);
+    return children;
 }
 
 static void cleandata(vnode_t* vnode){
-    FILE* disk = disks[vnode->disk];
     inode_t inode;
     fetch_inode(vnode,&inode);
-    long long blocknum = (inode.size-1)/BLOCKSIZE+1;
+    long long blocknum = inode.type == F ? (inode.size-1)/BLOCKSIZE+1 : (inode.size-1)/2+1;
+    if (inode.size = 0){
+        blocknum = 0;
+    }
     for (int i = 1; i<= blocknum; i++){
         long long address = get_block_address(vnode,i);
         free_block(vnode->disk, address);
@@ -921,7 +941,15 @@ long long get_block_address(vnode_t* vnode, long long block_number){
     FILE* fs = disks[vnode->disk];
     inode_t inode;
     fetch_inode(vnode, &inode);
-    long long totalblock = inode.size == 0 ? 0 : (inode.size-1)/BLOCKSIZE+1;
+
+    long long totalblock;
+    if (inode.size == 0)
+        totalblock = 0;
+    else if (inode.type == F)
+        totalblock = (inode.size - 1) / BLOCKSIZE + 1;
+    else
+        totalblock = (inode.size - 1) / 2 + 1;
+
     bool new = false;
     if (block_number>totalblock){
         new = true;
@@ -1020,4 +1048,20 @@ bool has_permission(vnode_t* vnode, char mode) {
         return (inode.permission[0] == mode || inode.permission[1] == mode);
     else
         return (inode.permission[2] == mode || inode.permission[3] == mode);
+}
+
+vnode_t* tracedown(char** path,int length){
+    vnode_t* parentdir = vnodes;
+    for (int i = 0; i < length; i++){
+        parentdir = get_vnode(parentdir, path[i]);
+        if (!parentdir) {
+            error = INVALID_PATH;
+            return NULL;
+        }
+        if (parentdir->type != DIR) {
+            error = NOT_DIR;
+            return NULL;
+        }
+    }
+    return parentdir;
 }

@@ -7,3 +7,4 @@ vgcore*
 mysh
 cmake-build*
 .idea/
+*dSYM/
