@@ -257,6 +257,7 @@ int f_stat(const char* pathname, inode_t* inode) {
     if (file == NULL)
         return FAILURE;
     fetch_inode(file, inode);
+    free_path(path);
     return SUCCESS;
 }
 
@@ -290,6 +291,7 @@ int f_remove(const char* pathname) {
     //free vnode
     free_vnode(vnode);
 
+    free_path(path);
     return SUCCESS;
 }
 
@@ -407,6 +409,39 @@ int f_mkdir(const char* pathname, char* mode, bool login) {
         error = DISK_FULL;
         return FAILURE;
     }
+
+    //add . and  ..
+    FILE* fs = disks[vnode->disk];
+    inode_t inode;
+    fetch_inode(vnode,&inode);
+
+    long long order = 1;
+    long long address = get_block_address(vnode, order);
+
+    fetch_inode(vnode,&inode);
+    inode.dir_size+=2;
+    inode.size+=2;
+
+    dirent_t entry_self;
+    entry_self.inode = vnode->inode;
+    entry_self.type = DIR;
+    char* selfname = ".";
+    strcpy(entry_self.name,selfname);
+
+    dirent_t entry_parent;
+    entry_parent.inode = vnode->parent->inode;
+    entry_parent.type = DIR;
+    char* parentname = "..";
+    strcpy(entry_parent.name,parentname);
+
+    fseek(fs,address,SEEK_SET);
+    fwrite(&entry_self,sizeof(dirent_t),1,fs);
+    fwrite(&entry_parent,sizeof(dirent_t),1,fs);
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    inode.mtime = tv.tv_sec;
+    update_inode(vnode,&inode);
 
     free_path(path);
     return SUCCESS;
@@ -549,6 +584,7 @@ int f_chmod(const char* pathname, char* mode){
     fetch_inode(vnode, &inode);
     strcpy(inode.permission,mode);
     update_inode(vnode,&inode);
+    free_path(path);
     return SUCCESS;
 }
 
@@ -795,7 +831,6 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     inode_t* inode = malloc(sizeof(inode_t));
     fetch_inode(parent,inode);
 
-    int end = 0;
     long long order = (inode->size)/2+1;
     long long address = get_block_address(parent, order);
 
