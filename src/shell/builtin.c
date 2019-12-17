@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <time.h>
 
 #include "builtin.h"
 #include "job.h"
@@ -19,6 +20,8 @@ int length;
 
 int getlastnode();
 int getlastnode_sus();
+
+const char* const user_table[] = {"", SUPERUSER, USER};
 
 int builtin(char** neededtokens, int argclength){
     currenttokens = neededtokens;
@@ -279,8 +282,6 @@ int getlastnode_sus(){
 
 hw7 built-ins
 
-currently being written by Jiyu
-
 note to group:
     1. mount table and n_disks
     2. relative path for mount
@@ -293,14 +294,35 @@ note to group:
     6. time
 
 
-issues to think about:
-    2. redirection
-    3. cat and more
-
 ****************************/
 
-void translate_time(time_t mtime) {
-    printf("feature (mtime) to be implemented"); //TODO
+void error_display() {
+    switch (error) {
+        case TARGET_EXISTS:
+            fprintf(stderr, "File exists\n");
+            break;
+        case INVALID_PATH:
+            fprintf(stderr, "No such file or directory\n");
+            break;
+        case NOT_DIR:
+            fprintf(stderr, "Not a directory\n");
+            break;
+        case PERM_DENIED:
+            fprintf(stderr, "Permission denied\n");
+            break;
+        case DISK_FULL:
+            fprintf(stderr, "Disk full\n");
+            break;
+        case NOT_FILE:
+            fprintf(stderr, "Is a directory\n");
+            break;
+        case FT_EXCEEDED:
+            fprintf(stderr, "Maximum number of opened files reached\n");
+            break;
+        default:
+            fprintf(stderr, "Unknown error\n");
+            break;
+    }
 }
 
 void ls_directory(int fd, bool mode_F, bool mode_l) {
@@ -317,9 +339,7 @@ void ls_directory(int fd, bool mode_F, bool mode_l) {
         }
         if (mode_l) {
             printf("%c%c%c%c", stats.permission[0], stats.permission[1], stats.permission[2], stats.permission[3]);
-            printf("\t%s\t%lld\t", user_table[stats.uid], stats.size);
-            translate_time(stats.mtime);
-            printf("\t%s%c\n", filename, indicator);
+            printf("\t%s\t%lld\t%s\t%s%c\n", user_table[stats.uid], stats.size, ctime(&stats.mtime), filename, indicator);
         } else {
             printf("%s%c\t", filename, indicator);
             need_to_append_newline = true;
@@ -376,9 +396,7 @@ void my_ls() {
                         printf("%s:\n", currenttokens[index]);
                         if (mode_l) {
                             printf("%c%c%c%c", stats.permission[0], stats.permission[1], stats.permission[2], stats.permission[3]);
-                            printf("\t%s\t%lld\t", user_table[stats.uid], stats.size);
-                            translate_time(stats.mtime);
-                            printf("\t%s\n", currenttokens[index]);
+                            printf("\t%s\t%lld\t%s\t%s\n", user_table[stats.uid], stats.size, ctime(&stats.mtime), currenttokens[index]);
                         } else {
                             printf("%s\n", currenttokens[index]);
                         }
@@ -518,7 +536,8 @@ void my_mkdir() {
     } else {
         for (int i = 1; i < length; i++) {
             if (f_mkdir(currenttokens[i], "rw--") == FAILURE) {
-                //TODO error handling
+                fprintf(stderr, "mkdir: cannot create directory '%s': ", currenttokens[i]);
+                error_display();
             }
         }
     }
@@ -530,7 +549,8 @@ void my_rmdir() {
     } else {
         for (int i = 1; i < length; i++) {
             if (f_rmdir(currenttokens[i]) == FAILURE) {
-                //TODO error handling
+                fprintf(stderr, "rmdir: failed to remove '%s': ", currenttokens[i]);
+                error_display();
             }
         }
     }
@@ -541,7 +561,8 @@ void my_cd() {
         fprintf(stderr, "cd: too many arguments\n");
     } else if (length == 2){
         if (set_wd(currenttokens[1]) == FAILURE) {
-            //TODO: error handling
+            fprintf(stderr, "cd: %s: ", currenttokens[1]);
+            error_display();
         }
     }
 }
@@ -559,14 +580,19 @@ void cat_helper(int fd) {
 }
 
 void my_cat() {
-    int fd = STDIN_FILENO;
+
     if (length == 1) {
-        cat_helper(fd);
+        cat_helper(STDIN_FILENO);
     } else {
+        int fd;
         for (int i = 1; i < length; i++) {
+            if (currenttokens[i][0] == '-' && currenttokens[i][1] == '\0') {
+                cat_helper(STDIN_FILENO);
+            }
             fd = f_open(currenttokens[i], "r");
             if (fd == FAILURE) {
-                //TODO error handling
+                fprintf(stderr, "cat: %s: ", currenttokens[i]);
+                error_display();
             } else {
                 cat_helper(fd);
                 f_close(fd);
@@ -589,7 +615,8 @@ void my_more() {
         for (int i = 1; i < length; i++) {
             fd = f_open(currenttokens[i], "r");
             if (fd == FAILURE) {
-                //TODO error handling
+                fprintf(stderr, "more: %s: ", currenttokens[i]);
+                error_display();
             } else {
                 f_stat(currenttokens[i], &stats);
                 count = 0;
@@ -634,24 +661,20 @@ void my_rm() {
 
 void my_mount() {
     if (length == 1) {
-        //TODO
+        //TODO mount table
     } else if (length == 3) {
         if (f_mount(currenttokens[1], currenttokens[2]) == FAILURE) {
             switch (error) {
-                case INVALID_PATH:
-                    fprintf(stderr, "mount: %s: invalid path\n", currenttokens[2]);
-                    break;
-                case NOT_DIR:
-                    fprintf(stderr, "mount: %s: not a directory\n", currenttokens[2]);
-                    break;
-                case TARGET_EXISTS:
-                    fprintf(stderr, "mount: %s: target already exists\n", currenttokens[2]);
-                    break;
                 case DISKS_EXCEEDED:
-                    fprintf(stderr, "mount: already reached the maximum number of disk mounts\n");
+                    fprintf(stderr, "mount: %s: Maximum number of disk mounts reached\n", currenttokens[1]);
                     break;
                 case INVALID_SOURCE:
-                    fprintf(stderr, "mount: invalid disk\n");
+                    fprintf(stderr, "mount: %s: Invalid disk\n", currenttokens[1]);
+                    break;
+                default:
+                    fprintf(stderr, "mount: %s: ", currenttokens[2]);
+                    error_display();
+                    break;
             }
         }
     } else {
