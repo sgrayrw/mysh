@@ -596,7 +596,7 @@ void init() {
         superblocks[i] = NULL;
     }
     wd = malloc(sizeof(char) * 2);
-    wd = "/";
+    strcpy(wd, "/");
 }
 
 void term() {
@@ -702,8 +702,8 @@ char** split_path(const char* pathname, int* length) {
         buf[strlen(wd)] = '/';
         strcat(buf, pathname);
     }
+    *length = 0;
     if ((name = strtok(buf, delim)) == NULL){
-        *length = 0;
         return NULL;
     }
     char **tokens = malloc(sizeof(char*));
