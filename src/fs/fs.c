@@ -667,29 +667,7 @@ int split_path(const char* pathname, char*** tokens) {
     }
     return count;
 }
-/*
-int split_path(const char* pathname, char*** tokens) {
-    char* name;
-    char* delim = "/";
-    int count = 0;
-    char buf[strlen(pathname + 1)];
-    strcpy(buf, pathname);
-    if ((name = strtok(buf, delim)) == NULL){
-        return count;
-    }
-    *tokens = malloc(sizeof(char*));
-    **tokens = malloc(strlen(name) + 1);
-    strcpy(**tokens, name);
-    count += 1;
-    while((name = strtok(NULL, delim)) != NULL){
-        count += 1;
-        *tokens = realloc(*tokens,sizeof(char*)*count);
-        *((*tokens) + count - 1) = malloc(strlen(name) + 1);
-        strcpy(*((*tokens) + count - 1), name);
-    }
-    return count;
-}
-*/
+
 static void free_path(char** path) {
 
 }
