@@ -15,7 +15,6 @@ int main() {
     f = f_opendir("/dir");
     f_closedir(f);
 
-
     dump();
     term();
 }
