@@ -708,16 +708,36 @@ char** split_path(const char* pathname, int* length) {
         return NULL;
     }
     char **tokens = malloc(sizeof(char*));
-    char *token = malloc(strlen(name) + 1);
-    strcpy(token, name);
-    tokens[0] = token;
-    *length += 1;
-    while((name = strtok(NULL, delim)) != NULL){
-        *length += 1;
-        tokens = realloc(tokens,sizeof(char*) * *length);
+    char *token;
+    if (strcmp(name, "..") != 0) {
         token = malloc(strlen(name) + 1);
         strcpy(token, name);
-        tokens[*length - 1] = token;
+        tokens[0] = token;
+        *length = 1;
+    }
+    while((name = strtok(NULL, delim)) != NULL){
+        if (strcmp(name, ".") == 0) {
+            continue;
+        } else if (strcmp(name, "..") == 0) {
+            if (*length == 0) {
+                continue;
+            } else {
+                *length -= 1;
+                free(tokens[*length]);
+                if (length > 0) tokens = realloc(tokens, sizeof(char*) * *length);
+            }
+        } else if (*length == 0) {
+            token = malloc(strlen(name) + 1);
+            strcpy(token, name);
+            tokens[0] = token;
+            *length = 1;
+        } else {
+            *length += 1;
+            tokens = realloc(tokens,sizeof(char*) * *length);
+            token = malloc(strlen(name) + 1);
+            strcpy(token, name);
+            tokens[*length - 1] = token;
+        }
     }
     return tokens;
 }
