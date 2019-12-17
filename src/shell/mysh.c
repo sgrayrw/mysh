@@ -377,7 +377,7 @@ void login() {
     getline(&pwd, &b, stdin);
     if (strcmp(user, USER"\n") == 0 && strcmp(pwd, USER_PWD"\n") == 0) {
         user_id = ID_USER;
-    } else if (strcmp(user, SUPERUSER"\n") == 0 && strcmp(pwd, SUPERUSER_PWD) == 0) {
+    } else if (strcmp(user, SUPERUSER"\n") == 0 && strcmp(pwd, SUPERUSER_PWD"\n") == 0) {
         user_id = ID_SUPERUSER;
     } else {
         printf("Invalid username or password.\n");
