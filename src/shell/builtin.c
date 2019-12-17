@@ -570,20 +570,27 @@ void my_pwd() {
 void cat_helper(int fd) {
     char buffer[BUFSIZE];
     ssize_t n;
-    while ((n = f_read(fd, buffer, BUFSIZE)) > 0) {
-        fwrite(buffer, n, 1, stdout);
+    if (fd == -STDIN_FILENO - 1) {
+        while ((n = read(STDIN_FILENO, buffer, BUFSIZE)) > 0) {
+            fwrite(buffer, n, 1, stdout);
+        }
+    } else {
+        while ((n = f_read(fd, buffer, BUFSIZE)) > 0) {
+            fwrite(buffer, n, 1, stdout);
+        }
     }
+
 }
 
 void my_cat() {
 
     if (length == 1) {
-        cat_helper(STDIN_FILENO);
+        cat_helper(-STDIN_FILENO - 1);
     } else {
         int fd;
         for (int i = 1; i < length; i++) {
             if (currenttokens[i][0] == '-' && currenttokens[i][1] == '\0') {
-                cat_helper(STDIN_FILENO);
+                cat_helper(-STDIN_FILENO - 1);
             }
             fd = f_open(currenttokens[i], "r");
             if (fd == FAILURE) {
