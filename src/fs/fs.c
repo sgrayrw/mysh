@@ -636,7 +636,7 @@ int set_wd(const char* pathname) {
 
     if (!wd || strlen(wd) < strlen(pathname))
         wd = realloc(wd, strlen(pathname) + 1);
-    strcpy(wd, dest->name);
+    strcpy(wd, pathname);
     return SUCCESS;
 }
 
