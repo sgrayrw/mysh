@@ -330,7 +330,13 @@ void ls_directory(int fd, bool mode_F, bool mode_l) {
                 printf("-");
             }
             printf("%c%c%c%c", stats.permission[0], stats.permission[1], stats.permission[2], stats.permission[3]);
-            printf("\t%-8s\t%lld\t%.24s\t%s%c\n", user_table[stats.uid], stats.size, ctime(&stats.mtime), filename, indicator);
+            printf("\t%-8s\t", user_table[stats.uid]);
+            if (stats.type == DIR) {
+                printf("%lld", stats.size);
+            } else {
+                printf("%d", stats.dir_size);
+            }
+            printf("\t%.24s\t%s%c\n", ctime(&stats.mtime), filename, indicator);
         } else {
             printf("%s%c\t", filename, indicator);
             need_to_append_newline = true;
@@ -548,8 +554,14 @@ void my_rmdir() {
     if (length == 1) {
         fprintf(stderr, "usage: rmdir <directory>...\n");
     } else {
+        inode_t inode;
         for (int i = 1; i < length; i++) {
-            if (f_rmdir(currenttokens[i]) == FAILURE) {
+            if (f_stat(currenttokens[i], &inode) == FAILURE) {
+                fprintf(stderr, "rmdir: failed to remove '%s': ", currenttokens[i]);
+                error_display();
+            } else if (inode.dir_size > 0) {
+                fprintf(stderr, "rmdir: failed to remove '%s': Directory not empty\n", currenttokens[i]);
+            } else if (f_rmdir(currenttokens[i]) == FAILURE) {
                 fprintf(stderr, "rmdir: failed to remove '%s': ", currenttokens[i]);
                 error_display();
             }
