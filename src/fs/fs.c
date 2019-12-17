@@ -693,7 +693,7 @@ int set_wd(const char* pathname) {
 char** split_path(const char* pathname, int* length) {
     char* name;
     char* delim = "/";
-    char buf[strlen(wd) + strlen(pathname) + 2];
+    char *buf = malloc(sizeof(char) * (strlen(wd) + strlen(pathname) + 2));
     if (pathname[0] == '/') {
         strcpy(buf, pathname);
     } else {
@@ -705,15 +705,17 @@ char** split_path(const char* pathname, int* length) {
         *length = 0;
         return NULL;
     }
-    char** tokens = malloc(sizeof(char*));
-    *tokens = malloc(strlen(name) + 1);
-    strcpy(*tokens, name);
+    char **tokens = malloc(sizeof(char*));
+    char *token = malloc(strlen(name) + 1);
+    strcpy(token, name);
+    tokens[0] == token;
     *length += 1;
     while((name = strtok(NULL, delim)) != NULL){
         *length += 1;
-        *tokens = realloc(*tokens,sizeof(char*) * *length);
-        tokens[*length - 1] = malloc(strlen(name) + 1);
-        strcpy(tokens[*length - 1], name);
+        tokens = realloc(tokens,sizeof(char*) * *length);
+        token = malloc(strlen(name) + 1);
+        strcpy(token, name);
+        tokens[*length - 1] = token;
     }
     return tokens;
 }
