@@ -125,6 +125,7 @@ int f_close(int fd) {
 }
 
 ssize_t f_read(int fd, void* buf, size_t count) {
+
     if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
         error = INVALID_FD;
         return FAILURE;
