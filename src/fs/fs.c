@@ -397,7 +397,6 @@ int f_mkdir(const char* pathname, char* mode) {
         return FAILURE;
     }
 
-    printf("mkdir\n");
     if (get_vnode(parentdir, path[length - 1])) {
         error = TARGET_EXISTS;
         return FAILURE;
@@ -749,7 +748,6 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
         fseek(disk, dirent->inode, SEEK_SET);
         fread(inode, sizeof(inode_t), 1, disk);
     }
-    printf("readdir: entry %s has inode type %d, dir type %d\n", dirent->name, inode->type, dirent->type);
     return SUCCESS;
 }
 
@@ -820,7 +818,6 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     update_inode(parent,inode);
 
     // initialize children
-    printf("createfile %s\n", filename);
     vnode_t* children = get_vnode(parent, filename);
     fetch_inode(children,inode);
     inode->type = type;
