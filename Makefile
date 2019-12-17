@@ -1,4 +1,4 @@
-TARGET = format test
+TARGET = format test mysh
 MYSH = mysh.o sighand.o job.o builtin.o
 FS = fs.o
 

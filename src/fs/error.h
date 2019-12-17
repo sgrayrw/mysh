@@ -26,8 +26,8 @@ typedef enum {
 
     // fmount
     DISKS_EXCEEDED, // max # of mounted disks reached
-} errno;
+} ERRNO;
 
-extern errno error;
+extern ERRNO error;
 
 #endif

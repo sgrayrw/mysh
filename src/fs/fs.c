@@ -8,7 +8,7 @@
 #include "fs.h"
 #include "../shell/mysh.h"
 
-errno error;
+ERRNO error;
 char* wd;
 static vnode_t* vnodes; // root of vnode tree
 static FILE* disks[MAX_DISKS]; // disks mounted
@@ -751,7 +751,7 @@ int readdir(vnode_t* dir, int n, dirent_t* dirent, inode_t* inode) {
         fseek(disk, dirent->inode, SEEK_SET);
         fread(inode, sizeof(inode_t), 1, disk);
     }
-    printf("readdir %s inode type %d dir type %d\n", dirent->name, inode->type, dirent->type);
+//    printf("readdir %s inode type %d dir type %d\n", dirent->name, inode->type, dirent->type);
     return SUCCESS;
 }
 
