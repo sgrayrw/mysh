@@ -19,6 +19,7 @@ int f_open(const char* pathname, const char* mode) {
     char** path = split_path(pathname, &length);
     if (length == 0) { // `/`
         error = TARGET_EXISTS;
+        free_path(path, length);
         return FAILURE;
     }
     vnode_t* parentdir = vnodes;
@@ -26,10 +27,12 @@ int f_open(const char* pathname, const char* mode) {
         parentdir = get_vnode(parentdir, path[i]);
         if (!parentdir) {
             error = INVALID_PATH;
+            free_path(path, length);
             return FAILURE;
         }
         if (parentdir->type != DIR) {
             error = NOT_DIR;
+            free_path(path, length);
             return FAILURE;
         }
     }
@@ -38,6 +41,7 @@ int f_open(const char* pathname, const char* mode) {
     if (vnode && vnode->type == DIR) {
         // if entry exists but is a directory, return failure
         error = NOT_FILE;
+        free_path(path, length);
         return FAILURE;
     }
 
@@ -47,10 +51,12 @@ int f_open(const char* pathname, const char* mode) {
         if (!vnode) {
             // "r" mode and file doesn't exist, return failure
             error = INVALID_PATH;
+            free_path(path, length);
             return FAILURE;
         }
         if (!has_permission(vnode, 'r')) {
             error = PERM_DENIED;
+            free_path(path, length);
             return FAILURE;
         }
 
@@ -61,17 +67,20 @@ int f_open(const char* pathname, const char* mode) {
             // "w" or "a" mode and file doesn't exist, create new one
             if (!has_permission(parentdir, 'w')) {
                 error = PERM_DENIED;
+                free_path(path, length);
                 return FAILURE;
             }
             vnode = create_file(parentdir, path[length - 1], F, "rw--");
             if (!vnode) {
                 error = DISK_FULL;
+                free_path(path, length);
                 return FAILURE;
             }
         } else {
             // file exists
             if (!has_permission(vnode, 'w')) {
                 error = PERM_DENIED;
+                free_path(path, length);
                 return FAILURE;
             }
             if (mode[0] == 'w') {
@@ -106,6 +115,7 @@ int f_open(const char* pathname, const char* mode) {
     }
     if (fd == -1) {
         error = FT_EXCEEDED;
+        free_path(path, length);
         return FAILURE;
     }
 
@@ -254,8 +264,10 @@ int f_stat(const char* pathname, inode_t* inode) {
     int length;
     char** path = split_path(pathname, &length);
     vnode_t* file = tracedown(path,length);
-    if (file == NULL)
+    if (file == NULL) {
+        free_path(path, length);
         return FAILURE;
+    }
     fetch_inode(file, inode);
     free_path(path,length);
     return SUCCESS;
@@ -265,17 +277,21 @@ int f_remove(const char* pathname) {
     int length;
     char** path = split_path(pathname, &length);
     vnode_t* vnode = tracedown(path,length);
-    if (vnode == NULL)
+    if (vnode == NULL) {
+        free_path(path,length);
         return FAILURE;
+    }
     inode_t inode;
     fetch_inode(vnode,&inode);
     if (inode.uid != user_id) {
         error = PERM_DENIED;
+        free_path(path,length);
         return FAILURE;
     }
 
     if (vnode->type != F){
         error = NOT_FILE;
+        free_path(path,length);
         return FAILURE;
     }
     //free file table entry
@@ -303,10 +319,12 @@ int f_opendir(const char* pathname) {
         vnode = get_vnode(vnode, path[i]);
         if (!vnode) {
             error = INVALID_PATH;
+            free_path(path,length);
             return FAILURE;
         }
         if (vnode->type != DIR) {
             error = NOT_DIR;
+            free_path(path,length);
             return FAILURE;
         }
     }
@@ -320,6 +338,7 @@ int f_opendir(const char* pathname) {
         fmode = WRONLY;
     else {
         error = PERM_DENIED;
+        free_path(path,length);
         return FAILURE;
     }
 
@@ -407,6 +426,7 @@ int f_mkdir(const char* pathname, char* mode, bool login) {
     char** path = split_path(pathname, &length);
     if (length == 0) { // `/`
         error = TARGET_EXISTS;
+        free_path(path,length);
         return FAILURE;
     }
     vnode_t* parentdir = vnodes;
@@ -414,27 +434,32 @@ int f_mkdir(const char* pathname, char* mode, bool login) {
         parentdir = get_vnode(parentdir, path[i]);
         if (!parentdir) {
             error = INVALID_PATH;
+            free_path(path,length);
             return FAILURE;
         }
         if (parentdir->type != DIR) {
             error = NOT_DIR;
+            free_path(path,length);
             return FAILURE;
         }
     }
 
     if (!login && !has_permission(parentdir, 'w')) {
         error = PERM_DENIED;
+        free_path(path,length);
         return FAILURE;
     }
 
     if (get_vnode(parentdir, path[length - 1])) {
         error = TARGET_EXISTS;
+        free_path(path,length);
         return FAILURE;
     }
 
     vnode_t* vnode = create_file(parentdir, path[length - 1], DIR, mode);
     if (!vnode) {
         error = DISK_FULL;
+        free_path(path,length);
         return FAILURE;
     }
 
@@ -484,10 +509,12 @@ int f_rmdir(const char* pathname) {
         vnode = get_vnode(vnode, path[i]);
         if (!vnode) {
             error = INVALID_PATH;
+            free_path(path,length);
             return FAILURE;
         }
         if (vnode->type != DIR) {
             error = NOT_DIR;
+            free_path(path,length);
             return FAILURE;
         }
     }
@@ -496,11 +523,13 @@ int f_rmdir(const char* pathname) {
     fetch_inode(vnode,&inode);
     if (inode.uid != user_id) {
         error = PERM_DENIED;
+        free_path(path,length);
         return FAILURE;
     }
 
     if (vnode->type != DIR){
         error = NOT_DIR;
+        free_path(path,length);
         return FAILURE;
     }
 
@@ -530,15 +559,18 @@ int f_mount(const char* source, const char* target) {
         parentdir = get_vnode(parentdir, path[i]);
         if (!parentdir) {
             error = INVALID_PATH;
+            free_path(path,length);
             return FAILURE;
         }
         if (parentdir->type != DIR) {
             error = NOT_DIR;
+            free_path(path,length);
             return FAILURE;
         }
     }
     if (length > 0 && get_vnode(parentdir, path[length - 1])) {
         error = TARGET_EXISTS;
+        free_path(path,length);
         return FAILURE;
     }
 
@@ -552,12 +584,14 @@ int f_mount(const char* source, const char* target) {
     }
     if (n_disk == -1) {
         error = DISKS_EXCEEDED;
+        free_path(path,length);
         return FAILURE;
     }
 
     FILE* disk = fopen(source, "r+");
     if (!disk) {
         error = INVALID_SOURCE;
+        free_path(path,length);
         return FAILURE;
     }
     disks[n_disk] = disk;
@@ -610,10 +644,12 @@ int f_umount(const char* target) {
         mountpoint = get_vnode(mountpoint, path[i]);
         if (!mountpoint) {
             error = INVALID_PATH;
+            free_path(path,length);
             return FAILURE;
         }
         if (mountpoint->type != DIR) {
             error = NOT_DIR;
+            free_path(path,length);
             return FAILURE;
         }
     }
@@ -630,8 +666,10 @@ int f_chmod(const char* pathname, char* mode){
     int length;
     char** path = split_path(pathname, &length);
     vnode_t* vnode = tracedown(path,length);
-    if (vnode == NULL)
+    if (vnode == NULL) {
+        free_path(path,length);
         return FAILURE;
+    }
     inode_t inode;
     fetch_inode(vnode, &inode);
     strcpy(inode.permission,mode);
@@ -709,10 +747,12 @@ int set_wd(const char* pathname) {
         dest = get_vnode(dest, path[i]);
         if (!dest) {
             error = INVALID_PATH;
+            free_path(path,length);
             return FAILURE;
         }
         if (dest->type != DIR) {
             error = NOT_DIR;
+            free_path(path,length);
             return FAILURE;
         }
     }

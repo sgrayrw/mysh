@@ -330,13 +330,7 @@ void ls_directory(int fd, bool mode_F, bool mode_l) {
                 printf("-");
             }
             printf("%c%c%c%c", stats.permission[0], stats.permission[1], stats.permission[2], stats.permission[3]);
-            printf("\t%-8s\t", user_table[stats.uid]);
-            if (stats.type == DIR) {
-                printf("%lld", stats.size);
-            } else {
-                printf("%d", stats.dir_size);
-            }
-            printf("\t%.24s\t%s%c\n", ctime(&stats.mtime), filename, indicator);
+            printf("\t%-8s\t%lld\t%.24s\t%s%c\n", user_table[stats.uid], stats.size, ctime(&stats.mtime), filename, indicator);
         } else {
             printf("%s%c\t", filename, indicator);
             need_to_append_newline = true;
