@@ -637,10 +637,11 @@ void my_more() {
                     count += n;
                     fwrite(buffer, n, 1, stdout);
                     if (count < stats.size) {
-                        printf("\n -- Press Enter for the next page (type q to quit): ");
+                        printf("\n -- Press Enter for the next block (type q to quit): ");
                         getline(&line, &t, stdin);
                         if (strcmp(line, "q\n") == 0) {
                             if (line) free(line);
+                            f_close(fd);
                             return;
                         }
                     }
@@ -650,6 +651,7 @@ void my_more() {
                     getline(&line, &t, stdin);
                     if (strcmp(line, "q\n") == 0) {
                         if (line) free(line);
+                        f_close(fd);
                         return;
                     }
                 }
