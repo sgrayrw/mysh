@@ -124,7 +124,6 @@ int f_close(int fd) {
 }
 
 ssize_t f_read(int fd, void* buf, size_t count) {
-
     if (fd < 0 || fd >= MAX_OPENFILE || ft[fd] == NULL) {
         error = INVALID_FD;
         return FAILURE;
@@ -263,7 +262,6 @@ int f_stat(const char* pathname, inode_t* inode) {
 }
 
 int f_remove(const char* pathname) {
-
     int length;
     char** path = split_path(pathname, &length);
     vnode_t* vnode = tracedown(path,length);
@@ -621,24 +619,19 @@ void init_fs() {
 
 void term_fs() {
     free_vnode(vnodes);
-    for (int i = 0; i < MAX_DISKS; ++i) {
-        if (disks[i]) {
-            fclose(disks[i]);
-            free(superblocks[i]);
-        }
-    }
     free(wd);
 }
 
 void free_vnode(vnode_t* vnode) {
-    char* rootname = "/";
-    if (strcmp(vnode->name,rootname)==0){
-        disks[vnode->disk] = NULL;
-        superblocks[vnode->disk] = NULL;
-    }
-
-    while (vnode->children != NULL){
+    while (vnode->children != NULL)
         free_vnode(vnode->children);
+
+    // if it's a mount point, close disk and free superblock
+    if (vnode->inode == superblocks[vnode->disk]->root_inode) {
+        fclose(disks[vnode->disk]);
+        disks[vnode->disk] = NULL;
+        free(superblocks[vnode->disk]);
+        superblocks[vnode->disk] = NULL;
     }
 
     if (vnode->parent == NULL){
@@ -764,6 +757,7 @@ char** split_path(const char* pathname, int* length) {
             tokens[*length - 1] = token;
         }
     }
+    free(buf);
     return tokens;
 }
 
@@ -908,7 +902,7 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     inode->dir_size++;
     inode->size++;
 
-    dirent_t* entry = malloc(sizeof(dirent_t));
+    dirent_t* entry = calloc(1, sizeof(dirent_t));
     if ((entry->inode = get_inode(parent->disk))==FAILURE){
         return NULL;
     }
