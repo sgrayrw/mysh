@@ -264,12 +264,13 @@ int f_rewind(int fd) {
 int f_stat(const char* pathname, inode_t* inode) {
     int length;
     char** path = split_path(pathname, &length);
-    vnode_t* file = tracedown(path,length);
-    if (file == NULL) {
+    vnode_t* vnode = tracedown(path,length);
+    if (vnode == NULL) {
         free_path(path, length);
         return FAILURE;
     }
-    fetch_inode(file, inode);
+    fetch_inode(vnode, inode);
+    inode->dir_size += vnode->n_mounts;
     free_path(path,length);
     return SUCCESS;
 }
@@ -399,17 +400,19 @@ int f_readdir(int fd, char* filename, inode_t* inode) {
         }
         fetch_inode(child, inode);
         strcpy(filename, child->name);
-        inode->size = inode->dir_size;
-        inode->size += child->n_mounts;
+        inode->dir_size += child->n_mounts;
+        if (child->type == DIR)
+            inode->size = inode->dir_size;
         file->position++;
         return SUCCESS;
     }
 
     if (dirent.type != EMPTY) {
         strcpy(filename, dirent.name);
-        inode->size = inode->dir_size;
         vnode_t* vnode = get_vnode(file->vnode, dirent.name);
-        inode->size += vnode->n_mounts;
+        inode->dir_size += vnode->n_mounts;
+        if (dirent.type == DIR)
+            inode->size = inode->dir_size;
     } else {
         inode->type = EMPTY;
     }
@@ -1232,18 +1235,18 @@ bool has_permission(vnode_t* vnode, char mode) {
         return (inode.permission[2] == mode || inode.permission[3] == mode);
 }
 
-vnode_t* tracedown(char** path,int length){
-    vnode_t* parentdir = vnodes;
+vnode_t* tracedown(char** path, int length){
+    vnode_t* vnode = vnodes;
     for (int i = 0; i < length; i++){
-        parentdir = get_vnode(parentdir, path[i]);
-        if (!parentdir) {
+        vnode = get_vnode(vnode, path[i]);
+        if (!vnode) {
             error = INVALID_PATH;
             return NULL;
         }
-        if (parentdir->type != DIR) {
+        if (i < length - 1 && vnode->type != DIR) {
             error = NOT_DIR;
             return NULL;
         }
     }
-    return parentdir;
+    return vnode;
 }
