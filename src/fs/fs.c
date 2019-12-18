@@ -790,6 +790,7 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
         } while (strcmp(child->name, parentdir->children->name) != 0);
     }
 
+    printf("to load from disk\n");
     // load from disk
     dirent_t dirent;
     inode_t inode;
@@ -900,11 +901,13 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     FILE* fs = disks[parent->disk];
     inode_t* inode = malloc(sizeof(inode_t));
     fetch_inode(parent,inode);
+    printf("fetch1 done\n");
 
     long long order = (inode->size)/2+1;
     long long address = get_block_address(parent, order);
 
     fetch_inode(parent,inode);
+    printf("fetch2 done\n");
     inode->dir_size++;
     inode->size++;
 
@@ -922,9 +925,12 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     inode->mtime = tv.tv_sec;
     update_inode(parent,inode);
 
+    printf("updated parent\n");
     // initialize children
     vnode_t* children = get_vnode(parent, filename);
+    printf("about to fetch 3\n");
     fetch_inode(children,inode);
+    printf("fetch 3 done\n");
     inode->type = type;
     strcpy(inode->permission,mode);
     inode->uid = user_id;
