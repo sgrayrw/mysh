@@ -6,7 +6,7 @@
 int user_id = ID_SUPERUSER;
 
 int main() {
-    init();
+    init_fs();
     /*
     if (f_mount("DISK", "/") == FAILURE) {
         fprintf(stderr, "f_mount(\"DISK\", \"/\") == FAILURE\n");
@@ -141,5 +141,5 @@ int main() {
 //        printf("entry %s\n", filename);
 
     dump();
-    term();
+    term_fs();
 }

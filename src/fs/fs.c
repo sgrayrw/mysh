@@ -609,7 +609,7 @@ int f_chmod(const char* pathname, char* mode){
     return SUCCESS;
 }
 
-void init() {
+void init_fs() {
     vnodes = NULL;
     for (int i = 0; i < MAX_DISKS; ++i) {
         disks[i] = NULL;
@@ -619,7 +619,7 @@ void init() {
     strcpy(wd, "/");
 }
 
-void term() {
+void term_fs() {
     free_vnode(vnodes);
     for (int i = 0; i < MAX_DISKS; ++i) {
         if (disks[i]) {
@@ -627,7 +627,7 @@ void term() {
             free(superblocks[i]);
         }
     }
-//    free(wd);
+    free(wd);
 }
 
 void free_vnode(vnode_t* vnode) {

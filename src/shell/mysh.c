@@ -36,14 +36,12 @@ int main() {
     initialize_handlers(); // register for signal handlers
     tcgetattr(STDIN_FILENO, &mysh_tc);
 
-    init();
+    init_fs();
     login();
 
     while (true) {
-
         process_changed_jobs(print);
         print = true;
-
         read_line(); // read into line buffer
         parse_line(); // parse arguments
         eval(); // evaluate arguments
@@ -53,7 +51,7 @@ int main() {
 
 void read_line() {
     size_t n = 0;
-    printf("mysh ❯ "); //TODO change prompt
+    printf("\n%s\nmysh ❯ ", wd);
     if (getline(&line, &n, stdin) == -1) {
         if (feof(stdin)) {
             my_exit();
@@ -295,7 +293,7 @@ void launch_process(bool background) {
             }
             free_list();
             free_tokens();
-            term();
+            term_fs();
             exit(EXIT_FAILURE);
         }
 
@@ -384,7 +382,7 @@ void login() {
         user_id = ID_SUPERUSER;
     } else {
         printf("Invalid username or password.\n");
-        term();
+        term_fs();
         exit(EXIT_SUCCESS);
     }
     free(user);

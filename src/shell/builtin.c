@@ -91,7 +91,7 @@ void my_jobs(){
 void my_exit(){
     free_list();
     free_tokens();
-    term();
+    term_fs();
     printf("Goodbye~\n");
     exit(EXIT_SUCCESS);
 }

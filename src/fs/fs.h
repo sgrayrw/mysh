@@ -46,8 +46,8 @@ int f_mount(const char* source, const char* target);
 int f_umount(const char* target);
 int f_chmod(const char* pathname, char* mode);
 
-void init();
-void term();
+void init_fs();
+void term_fs();
 void dump(); // dump vnode tree for debugging
 int set_wd(const char* pathname);
 
