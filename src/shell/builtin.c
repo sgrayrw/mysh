@@ -653,6 +653,7 @@ void my_more() {
                         return;
                     }
                 }
+                f_close(fd);
             }
         }
         if (line) free(line);
