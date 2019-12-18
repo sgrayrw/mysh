@@ -13,6 +13,7 @@ typedef struct vnode_t {
     int disk;
     char name[MAX_NAME_LEN + 1];
     f_type type;
+    int n_mounts; // number of mountpoints attached
     struct vnode_t* parent;
     struct vnode_t* children;
     struct vnode_t* next;

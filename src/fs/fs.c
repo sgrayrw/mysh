@@ -358,17 +358,43 @@ int f_readdir(int fd, char* filename, inode_t* inode) {
     }
 
     dirent_t dirent;
-    if (readdir(file->vnode, file->position++, &dirent, inode) == FAILURE) {
-        error = F_EOF;
-        return FAILURE;
+    if (readdir(file->vnode, file->position, &dirent, inode) == FAILURE) {
+        // mountpoints
+        inode_t dir_inode;
+        fetch_inode(file->vnode, &dir_inode);
+        int n = file->position - dir_inode.size;
+        if (n >= file->vnode->n_mounts) {
+            error = F_EOF;
+            return FAILURE;
+        }
+
+        vnode_t* child = file->vnode->children;
+        while (true) {
+            if (child->inode == superblocks[child->disk]->root_inode) {
+                n--;
+                if (n < 0)
+                    break;
+            }
+            child = child->next;
+        }
+        fetch_inode(child, inode);
+        strcpy(filename, child->name);
+        inode->size = inode->dir_size;
+        inode->size += child->n_mounts;
+        file->position++;
+        return SUCCESS;
     }
 
     if (dirent.type != EMPTY) {
         strcpy(filename, dirent.name);
         inode->size = inode->dir_size;
+        vnode_t* vnode = get_vnode(file->vnode, dirent.name);
+        inode->size += vnode->n_mounts;
     } else {
         inode->type = EMPTY;
     }
+
+    file->position++;
     return SUCCESS;
 }
 
@@ -544,6 +570,8 @@ int f_mount(const char* source, const char* target) {
     vnode_t* mountpoint = malloc(sizeof(vnode_t));
     mountpoint->inode = sb->root_inode;
     mountpoint->disk = n_disk;
+    mountpoint->type = DIR;
+    mountpoint->n_mounts = 0;
     if (length == 0) {
         // mount at `/` (for the first disk)
         strcpy(mountpoint->name, "/");
@@ -553,6 +581,7 @@ int f_mount(const char* source, const char* target) {
         mountpoint->prev = mountpoint;
         vnodes = mountpoint;
     } else {
+        parentdir->n_mounts++;
         strcpy(mountpoint->name, path[length - 1]);
         mountpoint->parent = parentdir;
         mountpoint->children = NULL;
@@ -588,6 +617,10 @@ int f_umount(const char* target) {
             return FAILURE;
         }
     }
+
+    if (mountpoint->parent)
+        mountpoint->parent->n_mounts--;
+
     free_path(path, length);
     free_vnode(mountpoint);
     return SUCCESS;
@@ -800,6 +833,7 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
         newchild->disk = parentdir->disk;
         strcpy(newchild->name, dirent.name);
         newchild->type = dirent.type;
+        newchild->n_mounts = 0;
         newchild->parent = parentdir;
         newchild->children = NULL;
 
