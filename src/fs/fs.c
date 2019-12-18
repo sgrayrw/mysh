@@ -871,7 +871,6 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
             child = child->next;
         } while (strcmp(child->name, parentdir->children->name) != 0);
     }
-
     // load from disk
     dirent_t dirent;
     inode_t inode;
@@ -903,10 +902,8 @@ vnode_t* get_vnode(vnode_t* parentdir, char* filename) {
             newchild->prev = parentdir->children;
             newchild->prev->next = newchild;
         }
-
         return newchild;
     }
-
     return NULL;
 }
 
@@ -983,7 +980,6 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     FILE* disk = disks[parent->disk];
     inode_t* inode = malloc(sizeof(inode_t));
     fetch_inode(parent,inode);
-
     long long order = (inode->size)/2+1;
     long long address = get_block_address(parent, order);
 
@@ -1013,7 +1009,6 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     inode->mtime = tv.tv_sec;
     fseek(disk, entry->inode, SEEK_SET);
     fwrite(inode, sizeof(inode_t), 1, disk);
-
     free(inode);
     free(entry);
     vnode_t* children = get_vnode(parent, filename);
@@ -1051,12 +1046,11 @@ void free_inode(vnode_t* vnode){
     sb_t* sb = superblocks[vnode->disk];
     long long address = vnode->inode;
 
-    fseek(disk,address,SEEK_SET);
     inode_t inode;
     fetch_inode(vnode,&inode);
     inode.size = 0;
     inode.next_inode = sb->free_inode;
-    fwrite(&inode,sizeof(inode_t),1,disk);
+    update_inode(vnode,&inode);
     sb->free_inode = address;
     fseek(disk,BOOTSIZE,SEEK_SET);
     fwrite(sb,sizeof(sb_t),1,disk);
