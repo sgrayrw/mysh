@@ -897,7 +897,7 @@ static long long get_inode(int n_disk){
 }
 
 static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* mode){
-    FILE* fs = disks[parent->disk];
+    FILE* disk = disks[parent->disk];
     inode_t* inode = malloc(sizeof(inode_t));
     fetch_inode(parent,inode);
 
@@ -914,8 +914,8 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     }
     strcpy(entry->name,filename);
     entry->type = type;
-    fseek(fs,address+sizeof(dirent_t)*((inode->size-1)%2),SEEK_SET);
-    fwrite(entry,sizeof(dirent_t),1,fs);
+    fseek(disk,address+sizeof(dirent_t)*((inode->size-1)%2),SEEK_SET);
+    fwrite(entry,sizeof(dirent_t),1,disk);
 
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -923,21 +923,17 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     update_inode(parent,inode);
 
     // initialize children
-    printf("createfile %s\n", filename);
-    vnode_t* children = get_vnode(parent, filename);
-    fetch_inode(children,inode);
-    inode->type = type;
     strcpy(inode->permission,mode);
-    inode->uid = user_id;
     inode->size = inode->dir_size = 0;
+    inode->type = type;
+    inode->uid = user_id;
     inode->mtime = tv.tv_sec;
-    update_inode(children, inode);
-
-    fetch_inode(children, inode);
-    printf("created file inode size %lld\n", inode->size);
+    fseek(disk, entry->inode, SEEK_SET);
+    fwrite(inode, sizeof(inode_t), 1, disk);
 
     free(inode);
     free(entry);
+    vnode_t* children = get_vnode(parent, filename);
     return children;
 }
 
