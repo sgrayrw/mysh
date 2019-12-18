@@ -676,9 +676,7 @@ void my_rm() {
 }
 
 void my_mount() {
-    if (length == 1) {
-        //TODO mount table
-    } else if (length == 3) {
+   if (length == 3) {
         if (f_mount(currenttokens[1], currenttokens[2]) == FAILURE) {
             switch (error) {
                 case DISKS_EXCEEDED:

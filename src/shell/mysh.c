@@ -121,13 +121,13 @@ bool check_redirection(int start, int end, bool background) {
     fd_in = FAILURE, fd_out = FAILURE;
     for (int i = start; i <= end; i++) {
         if ((tokens[i][0] == '<' || tokens[i][0] == '>') && background) {
-            fprintf(stderr, "Redirection for background jobs is not supported\n");
+            fprintf(stderr, "error: Redirection for background jobs is not supported\n");
             return false;
         }
         if (tokens[i][0] == '<') {
             i++;
             if (i > end) {
-                fprintf(stderr, "Syntax error near unexpected token '<'\n");
+                fprintf(stderr, "error: Syntax error near unexpected token '<'\n");
                 return false;
             } else {
                 if (fd_in != FAILURE) {
@@ -143,7 +143,7 @@ bool check_redirection(int start, int end, bool background) {
         } else if (tokens[i][0] == '>' && tokens[i][1] == 0) {
             i++;
             if (i > end) {
-                fprintf(stderr, "Syntax error near unexpected token '>'\n");
+                fprintf(stderr, "error: Syntax error near unexpected token '>'\n");
                 return false;
             } else {
                 if (fd_out != FAILURE) {
@@ -159,7 +159,7 @@ bool check_redirection(int start, int end, bool background) {
         } else if (tokens[i][0] == '>' && tokens[i][1] == '>') {
             i++;
             if (i > end) {
-                fprintf(stderr, "Syntax error near unexpected token '>>'\n");
+                fprintf(stderr, "error: Syntax error near unexpected token '>>'\n");
                 return false;
             } else {
                 if (fd_out != FAILURE) {
@@ -252,7 +252,11 @@ void redirection_post_launch(int *saved_in, int *saved_out) {
         char buffer[BUFSIZE];
         size_t n;
         while ((n = read(out, buffer, BUFSIZE)) > 0) {
-            f_write(fd_out, buffer, n);
+            if (f_write(fd_out, buffer, n) == FAILURE) {
+                fprintf(stderr, "error: ");
+                error_display();
+                break;
+            }
         }
         f_close(fd_out);
         close(out);
@@ -289,9 +293,9 @@ void launch_process(bool background) {
 
         if (execvp(args[0], args) == -1) {
             if (errno == ENOENT) {
-                fprintf(stderr, "No such file or directory.\n");
+                fprintf(stderr, "error: %s: No such file or directory.\n", args[0]);
             } else {
-                fprintf(stderr, "%s: command not found.\n", tokens[0]);
+                fprintf(stderr, "error: %s: command not found.\n", args[0]);
             }
             free_list();
             free_tokens();
