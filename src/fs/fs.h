@@ -29,6 +29,7 @@ typedef struct file_t {
 } file_t;
 
 extern char* wd;
+extern char *prompt_path;
 
 int f_open(const char* pathname, const char* mode);
 int f_close(int fd);

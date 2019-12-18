@@ -8,11 +8,12 @@
 #include "../shell/mysh.h"
 
 ERRNO error;
-char* wd;
+char *wd, *prompt_path;
 static vnode_t* vnodes; // root of vnode tree
 static FILE* disks[MAX_DISKS]; // disks mounted
 static sb_t* superblocks[MAX_DISKS]; // superblock for each disk
 static file_t* ft[MAX_OPENFILE]; // open file table
+const char* const user_table1[] = {"", SUPERUSER, USER};
 
 int f_open(const char* pathname, const char* mode) {
     int length;
@@ -686,11 +687,14 @@ void init_fs() {
     }
     wd = malloc(sizeof(char) * 2);
     strcpy(wd, "/");
+    prompt_path = malloc(sizeof(char) * 2);
+    strcpy(prompt_path, "/");
 }
 
 void term_fs() {
     free_vnode(vnodes);
     free(wd);
+    free(prompt_path);
 }
 
 void free_vnode(vnode_t* vnode) {
@@ -761,6 +765,14 @@ int set_wd(const char* pathname) {
     if (length == 0) {
         wd = malloc(sizeof(char) + 1);
         strcpy(wd, "/");
+        prompt_path = realloc(prompt_path, sizeof(char) * 2);
+        strcpy(prompt_path, "/");
+    } else if (length == 1 && strcmp(path[0], user_table1[user_id]) == 0) {
+        prompt_path = realloc(prompt_path, sizeof(char) * 2);
+        strcpy(prompt_path, "~");
+    } else {
+        prompt_path = realloc(prompt_path, sizeof(char) * (strlen(path[length - 1]) + 1));
+        strcpy(prompt_path, path[length - 1]);
     }
     int wd_length = 0;
     for (int j = 0; j < length; j++) {

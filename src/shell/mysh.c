@@ -31,6 +31,8 @@ struct termios mysh_tc;
 int user_id = 0;
 int fd_in, fd_out, in, out;
 
+const char* const user_table[] = {"", SUPERUSER, USER};
+
 int main() {
     jobs = NULL;
     initialize_handlers(); // register for signal handlers
@@ -51,7 +53,7 @@ int main() {
 
 void read_line() {
     size_t n = 0;
-    printf("\n%s\nmysh ❯ ", wd);
+    printf("%s[%s] ❯ ", user_table[user_id], prompt_path);
     if (getline(&line, &n, stdin) == -1) {
         if (feof(stdin)) {
             my_exit();

@@ -16,6 +16,7 @@ void free_tokens();
 void login();
 
 extern int user_id;
+extern const char* const user_table[];
 
 #define USER "John_Doe"
 #define SUPERUSER "Admin"
