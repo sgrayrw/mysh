@@ -722,15 +722,19 @@ char** split_path(const char* pathname, int* length) {
     }
     *length = 0;
     if ((name = strtok(buf, delim)) == NULL){
+        free(buf);
         return NULL;
     }
     char **tokens = malloc(sizeof(char*));
+    *tokens = NULL;
     char *token;
-    if (strcmp(name, "..") != 0) {
+    if (strcmp(name, "..") != 0 && strcmp(name, ".") != 0) {
         token = malloc(strlen(name) + 1);
         strcpy(token, name);
-        tokens[0] = token;
-        *length = 1;
+        *length += 1;
+        tokens = realloc(tokens, sizeof(char *) * (*length + 1));
+        tokens[*length - 1] = token;
+        tokens[*length] = NULL;
     }
     while((name = strtok(NULL, delim)) != NULL){
         if (strcmp(name, ".") == 0) {
@@ -741,20 +745,16 @@ char** split_path(const char* pathname, int* length) {
             } else {
                 *length -= 1;
                 free(tokens[*length]);
-                if (length > 0) tokens = realloc(tokens, sizeof(char*) * *length);
+                tokens[*length] = NULL;
+                tokens = realloc(tokens, sizeof(char *) * (*length + 1));
             }
-        } else if (*length == 0) {
-            token = malloc(strlen(name) + 1);
-            strcpy(token, name);
-            tokens =realloc(tokens, sizeof(char*));
-            *tokens = token;
-            *length = 1;
         } else {
-            *length += 1;
-            tokens = realloc(tokens,sizeof(char*) * *length);
             token = malloc(strlen(name) + 1);
             strcpy(token, name);
+            *length += 1;
+            tokens = realloc(tokens, sizeof(char *) * (*length + 1));
             tokens[*length - 1] = token;
+            tokens[*length] = NULL;
         }
     }
     free(buf);

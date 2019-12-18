@@ -51,7 +51,7 @@ int main() {
 
 void read_line() {
     size_t n = 0;
-    printf("\n%s\nmysh ❯ ", wd);
+    printf("mysh ❯ ", wd);
     if (getline(&line, &n, stdin) == -1) {
         if (feof(stdin)) {
             my_exit();
