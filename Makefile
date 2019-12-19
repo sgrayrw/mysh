@@ -11,7 +11,7 @@ format: src/fs/format.c src/fs/disk.h src/shell/mysh.h
 mysh: $(MYSH) $(FS)
 	gcc -g -o $@ $(MYSH) $(FS) -lm
 
-fs.o: src/fs/fs.c src/fs/fs.h src/fs/disk.h src/fs/error.h
+fs.o: src/fs/fs.c src/fs/fs.h src/fs/disk.h src/fs/error.h src/shell/mysh.h
 	gcc -c -g -o $@ src/fs/fs.c
 mysh.o: src/shell/mysh.c sighand.o job.o builtin.o src/fs/fs.h src/fs/error.h
 	gcc -c -g -o $@ src/shell/mysh.c
