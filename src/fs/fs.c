@@ -476,7 +476,7 @@ int f_rmdir(const char* pathname) {
     int length;
     char** path = split_path(pathname, &length);
     if (length == 0) {
-        error = ERR_ROOT;
+        error = RMDIR_ROOT;
         free_path(path, length);
         return FAILURE;
     }
@@ -501,6 +501,12 @@ int f_rmdir(const char* pathname) {
     if (inode.uid != user_id && user_id != ID_SUPERUSER) {
         error = PERM_DENIED;
         free_path(path,length);
+        return FAILURE;
+    }
+
+    if (vnode->mp) {
+        error = RMDIR_MP;
+        free_path(path, length);
         return FAILURE;
     }
 

@@ -9,13 +9,16 @@ typedef enum {
     INVALID_PATH = 1,
     NOT_DIR,
     NOT_FILE,
-    NOT_MP,
     INVALID_SOURCE,
     TARGET_EXISTS,
     INVALID_FD,
     DISK_FULL,
     PERM_DENIED,
-    ERR_ROOT,
+
+    // rmdir, umount
+    NOT_MP, // trying to umount non-mountpoint
+    RMDIR_MP, // cannot rmdir mountpoint
+    RMDIR_ROOT, // cannot rmdir root
 
     // fread, fwrite
     MODE_ERR,
