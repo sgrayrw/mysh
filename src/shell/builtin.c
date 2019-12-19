@@ -571,6 +571,15 @@ void my_cd() {
             fprintf(stderr, "cd: %s: ", currenttokens[1]);
             error_display();
         }
+    } else {
+        char *temp = malloc(strlen(user_table[user_id]) + 2);
+        strcpy(temp, "/");
+        strcat(temp, user_table[user_id]);
+        if (set_wd(temp) == FAILURE) {
+            fprintf(stderr, "cd: %s: ", currenttokens[1]);
+            error_display();
+        }
+        free(temp);
     }
 }
 

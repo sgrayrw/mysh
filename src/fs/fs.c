@@ -172,7 +172,6 @@ ssize_t f_read(int fd, void* buf, size_t count) {
 
     size_t readsize = endposition-file->position+1;
     file->position = endposition+1;
-    printf("position %lld\n", file->position);
     return readsize;
 }
 
@@ -287,7 +286,7 @@ int f_remove(const char* pathname) {
     }
     inode_t inode;
     fetch_inode(vnode,&inode);
-    if (inode.uid != user_id) {
+    if (inode.uid != user_id && user_id != ID_SUPERUSER) {
         error = PERM_DENIED;
         free_path(path,length);
         return FAILURE;
@@ -493,7 +492,7 @@ int f_rmdir(const char* pathname) {
 
     inode_t inode;
     fetch_inode(vnode,&inode);
-    if (inode.uid != user_id) {
+    if (inode.uid != user_id && user_id != ID_SUPERUSER) {
         error = PERM_DENIED;
         free_path(path,length);
         return FAILURE;
@@ -1190,11 +1189,11 @@ long long get_block_address(vnode_t* vnode, long long block_number){
 }
 
 bool has_permission(vnode_t* vnode, char mode) {
-    if (user_id == ID_SUPERUSER)
-        return true;
-
     inode_t inode;
     fetch_inode(vnode, &inode);
+
+    if (user_id == ID_SUPERUSER && inode.uid != user_id)
+        return true;
 
     if (inode.uid == user_id)
         return (inode.permission[0] == mode || inode.permission[1] == mode);
