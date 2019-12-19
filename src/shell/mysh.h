@@ -27,4 +27,7 @@ extern const char* const user_table[];
 
 #define BUFSIZE 512
 
+#define IN_TMP "mysh_tmp_in"
+#define OUT_TMP "mysh_tmp_out"
+
 #endif

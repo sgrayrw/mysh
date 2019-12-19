@@ -214,7 +214,7 @@ void eval() {
 
 void redirection_pre_launch(int *saved_in, int *saved_out) {
     if (fd_in != FAILURE) {
-        in = open("in", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+        in = open(IN_TMP, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
         char buffer[BUFSIZE];
         ssize_t n;
         while ((n = f_read(fd_in, buffer, BUFSIZE)) > 0) {
@@ -222,10 +222,10 @@ void redirection_pre_launch(int *saved_in, int *saved_out) {
         }
         f_close(fd_in);
         close(in);
-        in = open("in", O_RDONLY);
+        in = open(IN_TMP, O_RDONLY);
     }
     if (fd_out != FAILURE) {
-        out = open("out", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+        out = open(OUT_TMP, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
     }
 
     if (fd_in != FAILURE) {
@@ -248,7 +248,7 @@ void redirection_post_launch(int *saved_in, int *saved_out) {
     if (fd_out != FAILURE) {
         dup2(*saved_out, STDOUT_FILENO);
         close(*saved_out);
-        out = open("out", O_RDONLY);
+        out = open(OUT_TMP, O_RDONLY);
         char buffer[BUFSIZE];
         size_t n;
         while ((n = read(out, buffer, BUFSIZE)) > 0) {

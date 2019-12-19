@@ -91,6 +91,8 @@ void my_exit(){
     free_tokens();
     term_fs();
     printf("Goodbye~\n");
+    unlink(IN_TMP);
+    unlink(OUT_TMP);
     exit(EXIT_SUCCESS);
 }
 
