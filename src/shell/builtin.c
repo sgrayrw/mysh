@@ -487,7 +487,7 @@ void my_chmod() {
                             error_display();
                         }
                     } else {
-                        if (currenttokens[1][0] != '0') {
+                        if (currenttokens[1][0] != 'o') {
                             if (r_bit) {
                                 if (currenttokens[1][1] == '-') {
                                     stats.permission[0] = '-';
