@@ -467,40 +467,6 @@ int f_mkdir(const char* pathname, char* mode, bool login) {
         return FAILURE;
     }
 
-    //add . and  ..
-//    FILE* fs = disks[vnode->disk];
-//    inode_t inode;
-//    fetch_inode(vnode,&inode);
-//
-//    long long order = 1;
-//    long long address = get_block_address(vnode, order);
-//
-//    fetch_inode(vnode,&inode);
-//    inode.dir_size+=2;
-//    inode.size+=2;
-//
-//    dirent_t entry_self;
-//    entry_self.inode = vnode->inode;
-//    entry_self.type = DIR;
-//    char* selfname = ".";
-//    strcpy(entry_self.name,selfname);
-//
-//    dirent_t entry_parent;
-//    entry_parent.inode = vnode->parent->inode;
-//    entry_parent.type = DIR;
-//    char* parentname = "..";
-//    strcpy(entry_parent.name,parentname);
-//
-//    fseek(fs,address,SEEK_SET);
-//    fwrite(&entry_self,sizeof(dirent_t),1,fs);
-//    fwrite(&entry_parent,sizeof(dirent_t),1,fs);
-//
-//    struct timeval tv;
-//    gettimeofday(&tv, NULL);
-//    inode.mtime = tv.tv_sec;
-//    update_inode(vnode,&inode);
-
-
     free_path(path, length);
     return SUCCESS;
 }
@@ -1177,16 +1143,14 @@ long long get_block_address(vnode_t* vnode, long long block_number){
         }
         address = inode.i4block;
     }
-    fseek(fs,vnode->inode,SEEK_SET);
-    fwrite(&inode,sizeof(inode_t),1,fs);
+    update_inode(vnode,&inode);
     if (new){
         if (index[0] == 0){
             if ((newaddress=get_block(vnode->disk)) ==FAILURE){
                 return FAILURE;
             }
             inode.dblocks[index[1]] = newaddress;
-            fseek(fs,vnode->inode,SEEK_SET);
-            fwrite(&inode,sizeof(inode_t),1,fs);
+            update_inode(vnode,&inode);
             return newaddress;
         }else{
             for (int i = 1; i<index[5] ; i++){
