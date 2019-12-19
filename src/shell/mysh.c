@@ -356,7 +356,8 @@ hw7
 void login() {
     if (f_mount("DISK", "/") == FAILURE) {
         printf("Failed to detect DISK. Please run the format program to make one.\n");
-        term_fs();
+        free(wd);
+        free(prompt_path);
         exit(EXIT_SUCCESS);
     }
 
