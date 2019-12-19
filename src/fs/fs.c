@@ -950,8 +950,10 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     fetch_inode(parent,inode);
     long long order = (inode->size)/2+1;
     long long address = get_block_address(parent, order);
-    if (address == FAILURE)
+    if (address == FAILURE) {
+        free(inode);
         return NULL;
+    }
 
     fetch_inode(parent,inode);
     inode->dir_size++;
