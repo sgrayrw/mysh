@@ -9,11 +9,13 @@ typedef enum {
     INVALID_PATH = 1,
     NOT_DIR,
     NOT_FILE,
+    NOT_MP,
     INVALID_SOURCE,
     TARGET_EXISTS,
     INVALID_FD,
     DISK_FULL,
     PERM_DENIED,
+    ERR_ROOT,
 
     // fread, fwrite
     MODE_ERR,
