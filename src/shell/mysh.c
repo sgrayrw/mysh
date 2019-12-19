@@ -389,6 +389,8 @@ void login() {
     } else {
         printf("Invalid username or password.\n");
         term_fs();
+        free(user);
+        free(pwd);
         exit(EXIT_SUCCESS);
     }
     free(user);
