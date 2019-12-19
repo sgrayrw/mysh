@@ -216,7 +216,7 @@ void redirection_pre_launch(int *saved_in, int *saved_out) {
     if (fd_in != FAILURE) {
         in = open("in", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
         char buffer[BUFSIZE];
-        size_t n;
+        ssize_t n;
         while ((n = f_read(fd_in, buffer, BUFSIZE)) > 0) {
             write(in, buffer, n);
         }
