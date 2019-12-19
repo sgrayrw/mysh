@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include <math.h>
 #include "error.h"
 #include "fs.h"
 #include "../shell/mysh.h"
@@ -466,40 +467,6 @@ int f_mkdir(const char* pathname, char* mode, bool login) {
         free_path(path,length);
         return FAILURE;
     }
-
-    //add . and  ..
-//    FILE* fs = disks[vnode->disk];
-//    inode_t inode;
-//    fetch_inode(vnode,&inode);
-//
-//    long long order = 1;
-//    long long address = get_block_address(vnode, order);
-//
-//    fetch_inode(vnode,&inode);
-//    inode.dir_size+=2;
-//    inode.size+=2;
-//
-//    dirent_t entry_self;
-//    entry_self.inode = vnode->inode;
-//    entry_self.type = DIR;
-//    char* selfname = ".";
-//    strcpy(entry_self.name,selfname);
-//
-//    dirent_t entry_parent;
-//    entry_parent.inode = vnode->parent->inode;
-//    entry_parent.type = DIR;
-//    char* parentname = "..";
-//    strcpy(entry_parent.name,parentname);
-//
-//    fseek(fs,address,SEEK_SET);
-//    fwrite(&entry_self,sizeof(dirent_t),1,fs);
-//    fwrite(&entry_parent,sizeof(dirent_t),1,fs);
-//
-//    struct timeval tv;
-//    gettimeofday(&tv, NULL);
-//    inode.mtime = tv.tv_sec;
-//    update_inode(vnode,&inode);
-
 
     free_path(path, length);
     return SUCCESS;
@@ -1033,7 +1000,6 @@ static void cleandata(vnode_t* vnode){
 void free_block(int n_disk, long long address){
     FILE* disk = disks[n_disk];
     sb_t* sb = superblocks[n_disk];
-
     fseek(disk,address,SEEK_SET);
     fwrite(&(sb->free_block),sizeof(long long),1,disk);
     sb->free_block = address;
@@ -1083,16 +1049,16 @@ void free_inode(vnode_t* vnode){
 int get_block_index(long long block_number, int* index){
     index[5] = 0;
     long long order = block_number;
-    int sum[5];
-    if (order<=(sum[0]=10)){
+    long long sum[5] = {10,64+10,pow(64,2)+64+10,pow(64,3)+pow(64,2)+64+10,pow(64,4)+pow(64,3)+pow(64,2)+64+10};
+    if (order<=sum[0]){
         index[0] = 0;
-    }else if(order <=(sum[1]=64+10)){
+    }else if(order <=sum[1]){
         index[0] = 1;
-    }else if(order <= (sum[2]=64^2+64+10)){
+    }else if(order <= sum[2]){
         index[0] = 2;
-    }else if(order <= (sum[3] = 64^3+64^2+64+10)){
+    }else if(order <= sum[3]){
         index[0] = 3;
-    }else if(order <= (sum[4] = 64^4+64^3+64^2+64+10)){
+    }else if(order <= sum[4]){
         index[0] = 4;
     }else{
         return FAILURE;
@@ -1100,8 +1066,8 @@ int get_block_index(long long block_number, int* index){
 
     for (int i = 1; i<5; i++){
         if (index[0]>=i){
-            order = i == 1 ? order - sum[index[0]-1] : order-index[i-1]*64^(index[0]-i+1);
-            index[i] = (order-1)/64^(index[0]-i);
+            order = i == 1 ? order - sum[index[0]-1] : order-index[i-1]*pow(64,index[0]-i+1);
+            index[i] = (order-1)/(pow(64,index[0]-i));
             if (index[i] < 0){
                 index[i] = 0;
             }
@@ -1137,12 +1103,11 @@ long long get_block_address(vnode_t* vnode, long long block_number){
     if (get_block_index(block_number,index)==FAILURE){
         return FAILURE;
     }
-
     long long address = 0;
     long long newaddress = 0;
     if (index[0] == 1){
         if (index[5] == 0 && new){
-            if ((newaddress = get_block(vnode->disk)==FAILURE)){
+            if ((newaddress = get_block(vnode->disk))==FAILURE){
                 return FAILURE;
             }
             inode.iblock = newaddress;
@@ -1151,7 +1116,7 @@ long long get_block_address(vnode_t* vnode, long long block_number){
         address = inode.iblock;
     }else if (index[0] == 2){
         if (index[5] == 0 && new){
-            if ((newaddress = get_block(vnode->disk)==FAILURE)){
+            if ((newaddress = get_block(vnode->disk))==FAILURE){
                 return FAILURE;
             }
             inode.i2block = newaddress;
@@ -1160,7 +1125,7 @@ long long get_block_address(vnode_t* vnode, long long block_number){
         address = inode.i2block;
     }else if (index[0] == 3){
         if (index[5] == 0 && new){
-            if ((newaddress = get_block(vnode->disk)==FAILURE)){
+            if ((newaddress = get_block(vnode->disk))==FAILURE){
                 return FAILURE;
             }
             inode.i3block = newaddress;
@@ -1169,7 +1134,7 @@ long long get_block_address(vnode_t* vnode, long long block_number){
         address = inode.i3block;
     }else if (index[0] == 4){
         if (index[5] == 0 && new){
-            if ((newaddress = get_block(vnode->disk)==FAILURE)){
+            if ((newaddress = get_block(vnode->disk))==FAILURE){
                 return FAILURE;
             }
             inode.i4block = newaddress;
@@ -1177,27 +1142,28 @@ long long get_block_address(vnode_t* vnode, long long block_number){
         }
         address = inode.i4block;
     }
-    fseek(fs,vnode->inode,SEEK_SET);
-    fwrite(&inode,sizeof(inode_t),1,fs);
+    update_inode(vnode,&inode);
     if (new){
         if (index[0] == 0){
             if ((newaddress=get_block(vnode->disk)) ==FAILURE){
                 return FAILURE;
             }
             inode.dblocks[index[1]] = newaddress;
-            fseek(fs,vnode->inode,SEEK_SET);
-            fwrite(&inode,sizeof(inode_t),1,fs);
+            update_inode(vnode,&inode);
             return newaddress;
         }else{
             for (int i = 1; i<index[5] ; i++){
                 fseek(fs, address+sizeof(long long)*index[i],SEEK_SET);
                 fread(&address, sizeof(long long),1,fs);
             }
-            fseek(fs, address+sizeof(long long)*index[index[5]],SEEK_SET);
+            long long nextaddress = address+sizeof(long long)*index[index[5]];
+            fseek(fs, nextaddress,SEEK_SET);
             for (int i = index[5]; i<=index[0]; i++){
-                if ((newaddress = get_block(vnode->disk)==FAILURE)){
+                if ((newaddress = get_block(vnode->disk))==FAILURE){
                     return FAILURE;
                 }
+                if (i == index[5])
+                    fseek(fs, nextaddress,SEEK_SET);
                 fwrite(&newaddress, sizeof(long long), 1, fs);
                 fseek(fs, newaddress,SEEK_SET);
             }
