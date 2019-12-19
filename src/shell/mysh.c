@@ -381,9 +381,18 @@ void login() {
     char *user = NULL, *pwd = NULL;
     size_t a = 0, b = 0;
     printf("Username: ");
-    getline(&user, &a, stdin);
+    if (getline(&user, &a, stdin) == FAILURE) {
+        free(user);
+        term_fs();
+        exit(EXIT_SUCCESS);
+    }
     printf("Password: ");
-    getline(&pwd, &b, stdin);
+    if (getline(&pwd, &b, stdin) == FAILURE) {
+        free(user);
+        free(pwd);
+        term_fs();
+        exit(EXIT_SUCCESS);
+    }
     if (strcmp(user, USER"\n") == 0 && strcmp(pwd, USER_PWD"\n") == 0) {
         user_id = ID_USER;
     } else if (strcmp(user, SUPERUSER"\n") == 0 && strcmp(pwd, SUPERUSER_PWD"\n") == 0) {
