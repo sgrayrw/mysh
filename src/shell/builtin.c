@@ -304,6 +304,15 @@ void error_display() {
         case FT_EXCEEDED:
             fprintf(stderr, "Maximum number of opened files reached\n");
             break;
+        case NOT_MP:
+            fprintf(stderr, "Not a mount point\n");
+            break;
+        case RMDIR_MP:
+            fprintf(stderr, "Cannot remove a mount point; use umount instead\n");
+            break;
+        case RMDIR_ROOT:
+            fprintf(stderr, "Root directory\n");
+            break;
         default:
             fprintf(stderr, "Unknown error\n");
             break;
