@@ -438,7 +438,7 @@ void my_chmod() {
         } else {
             char *remains = NULL;
             long permission_num = strtol(currenttokens[1], &remains, 4);
-            if (0 <= permission_num && permission_num <= 15 && remains == NULL) {
+            if (0 <= permission_num && permission_num <= 15 && (remains == NULL || strlen(remains) == 0)) {
                 mode = Absolute;
                 if (permission_num >= 8) {
                     permission_new[0] = 'r';
