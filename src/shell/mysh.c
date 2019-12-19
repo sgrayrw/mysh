@@ -135,7 +135,7 @@ bool check_redirection(int start, int end, bool background) {
                 }
                 fd_in = f_open(tokens[i], "r");
                 if (fd_in == FAILURE) {
-                    fprintf(stderr, "%s: ", tokens[i]);
+                    fprintf(stderr, "error: %s: ", tokens[i]);
                     error_display();
                     return false;
                 }
@@ -151,7 +151,7 @@ bool check_redirection(int start, int end, bool background) {
                 }
                 fd_out = f_open(tokens[i], "w");
                 if (fd_out == FAILURE) {
-                    fprintf(stderr, "%s: ", tokens[i]);
+                    fprintf(stderr, "error: %s: ", tokens[i]);
                     error_display();
                     return false;
                 }
