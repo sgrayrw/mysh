@@ -1000,7 +1000,6 @@ static void cleandata(vnode_t* vnode){
 void free_block(int n_disk, long long address){
     FILE* disk = disks[n_disk];
     sb_t* sb = superblocks[n_disk];
-
     fseek(disk,address,SEEK_SET);
     fwrite(&(sb->free_block),sizeof(long long),1,disk);
     sb->free_block = address;
@@ -1067,8 +1066,8 @@ int get_block_index(long long block_number, int* index){
 
     for (int i = 1; i<5; i++){
         if (index[0]>=i){
-            order = i == 1 ? order - sum[index[0]-1] : order-index[i-1]*64^(index[0]-i+1);
-            index[i] = (order-1)/64^(index[0]-i);
+            order = i == 1 ? order - sum[index[0]-1] : order-index[i-1]*pow(64,index[0]-i+1);
+            index[i] = (order-1)/(pow(64,index[0]-i));
             if (index[i] < 0){
                 index[i] = 0;
             }
@@ -1102,15 +1101,13 @@ long long get_block_address(vnode_t* vnode, long long block_number){
     }
     int index[6];
     if (get_block_index(block_number,index)==FAILURE){
-        printf("a\n");
         return FAILURE;
     }
-
     long long address = 0;
     long long newaddress = 0;
     if (index[0] == 1){
         if (index[5] == 0 && new){
-            if ((newaddress = get_block(vnode->disk)==FAILURE)){
+            if ((newaddress = get_block(vnode->disk))==FAILURE){
                 return FAILURE;
             }
             inode.iblock = newaddress;
@@ -1119,7 +1116,7 @@ long long get_block_address(vnode_t* vnode, long long block_number){
         address = inode.iblock;
     }else if (index[0] == 2){
         if (index[5] == 0 && new){
-            if ((newaddress = get_block(vnode->disk)==FAILURE)){
+            if ((newaddress = get_block(vnode->disk))==FAILURE){
                 return FAILURE;
             }
             inode.i2block = newaddress;
@@ -1128,7 +1125,7 @@ long long get_block_address(vnode_t* vnode, long long block_number){
         address = inode.i2block;
     }else if (index[0] == 3){
         if (index[5] == 0 && new){
-            if ((newaddress = get_block(vnode->disk)==FAILURE)){
+            if ((newaddress = get_block(vnode->disk))==FAILURE){
                 return FAILURE;
             }
             inode.i3block = newaddress;
@@ -1137,7 +1134,7 @@ long long get_block_address(vnode_t* vnode, long long block_number){
         address = inode.i3block;
     }else if (index[0] == 4){
         if (index[5] == 0 && new){
-            if ((newaddress = get_block(vnode->disk)==FAILURE)){
+            if ((newaddress = get_block(vnode->disk))==FAILURE){
                 return FAILURE;
             }
             inode.i4block = newaddress;
@@ -1159,11 +1156,14 @@ long long get_block_address(vnode_t* vnode, long long block_number){
                 fseek(fs, address+sizeof(long long)*index[i],SEEK_SET);
                 fread(&address, sizeof(long long),1,fs);
             }
-            fseek(fs, address+sizeof(long long)*index[index[5]],SEEK_SET);
+            long long nextaddress = address+sizeof(long long)*index[index[5]];
+            fseek(fs, nextaddress,SEEK_SET);
             for (int i = index[5]; i<=index[0]; i++){
-                if ((newaddress = get_block(vnode->disk)==FAILURE)){
+                if ((newaddress = get_block(vnode->disk))==FAILURE){
                     return FAILURE;
                 }
+                if (i == index[5])
+                    fseek(fs, nextaddress,SEEK_SET);
                 fwrite(&newaddress, sizeof(long long), 1, fs);
                 fseek(fs, newaddress,SEEK_SET);
             }
