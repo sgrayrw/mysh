@@ -172,6 +172,7 @@ ssize_t f_read(int fd, void* buf, size_t count) {
 
     size_t readsize = endposition-file->position+1;
     file->position = endposition+1;
+    printf("position %lld\n", file->position);
     return readsize;
 }
 
@@ -949,6 +950,8 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
     fetch_inode(parent,inode);
     long long order = (inode->size)/2+1;
     long long address = get_block_address(parent, order);
+    if (address == FAILURE)
+        return NULL;
 
     fetch_inode(parent,inode);
     inode->dir_size++;
@@ -956,6 +959,8 @@ static vnode_t* create_file(vnode_t* parent, char* filename, f_type type, char* 
 
     dirent_t* entry = calloc(1, sizeof(dirent_t));
     if ((entry->inode = get_inode(parent->disk))==FAILURE){
+        free(inode);
+        free(entry);
         return NULL;
     }
     strcpy(entry->name,filename);
