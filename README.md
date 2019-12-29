@@ -6,7 +6,7 @@ Authors: [Yuxiao Wang](https://github.com/sgrayrw), [Ruikang Shi](https://github
 
 ## Usage
 
-- Clone the repo
+- clone the repo
 - run `make` to build the executables
 - run `./format DISK` to make a disk for the file system that the shell runs on
 - run `./mysh` to launch the shell
@@ -16,10 +16,10 @@ Authors: [Yuxiao Wang](https://github.com/sgrayrw), [Ruikang Shi](https://github
 
 ## List of supported commands
 
-- All binaries in `$PATH` (e.g. `echo`, `ps`, etc.)
-- Job control
+- all binaries in `$PATH` (e.g. `echo`, `ps`, etc.)
+- job control
   - `fg`, `bg`, `jobs`, `&`, `kill`
-- File system
+- file system
   - file: `cat`, `more`, `>` and `<` (redirection), `rm`
   - directory: `ls [-l]`, `mkdir`, `rmdir`, `cd`, `pwd`
   - disk: `mount`, `umount`
